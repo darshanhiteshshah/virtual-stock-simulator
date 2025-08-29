@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const apiClient = axios.create({
-    baseURL: "process.env.REACT_APP_API_URL/api/achievements",
+    baseURL: `${process.env.REACT_APP_API_URL}/api/achievements`,
     headers: { "Content-Type": "application/json" },
 });
 

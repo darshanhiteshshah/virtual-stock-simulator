@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const apiClient = axios.create({
-    baseURL: "process.env.REACT_APP_API_URL/api/alerts",
+    baseURL: `${process.env.REACT_APP_API_URL}/api/alerts`,
     headers: { "Content-Type": "application/json" },
 });
 
