@@ -11,7 +11,7 @@ import Trade from "./pages/Trade";
 import TransactionHistory from "./pages/TransactionHistory";
 import Leaderboard from "./pages/Leaderboard";
 import ProtectedRoute from "./routes/ProtectedRoute";
-import Watchlist from "./pages/watchlist";
+import Watchlist from "./pages/watchList";
 import Profile from "./pages/Profile";
 import Sentiment from "./pages/Sentiment";
 import Alerts from "./pages/Alerts"; 
