@@ -4,7 +4,7 @@ const {
     getWatchlist,
     addToWatchlist,
     removeFromWatchlist,
-} = require("../controllers/watchlistController");
+} = require("../controllers/watchListController");
 const { protect } = require("../middleware/authMiddleware");
 
 router.route("/").get(protect, getWatchlist);
