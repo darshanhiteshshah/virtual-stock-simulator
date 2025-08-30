@@ -40,10 +40,10 @@ startCorporateActionsService();
 const app = express();
 
 // Middleware
-app.use(cors(
-  origin = "https://virtual-stock-simulator-qwe1.vercel.app/" ,
-  credentials=true,
-));
+app.use(cors({
+  origin: "https://virtual-stock-simulator-qwe1.vercel.app",
+  credentials: true,
+}));
 app.use(express.json());
 
 // API Routes
@@ -61,6 +61,11 @@ app.use("/api/alerts", alertRoutes);
 app.use("/api/achievements", achievementRoutes);
 app.use("/api/feed", feedRoutes);
 
+// Root route should be above error middlewares
+app.get("/", (req, res) => {
+  res.send("Backend is running!");
+});
+
 // Error Handling Middleware (should be last)
 app.use(notFound);
 app.use(errorHandler);
@@ -69,7 +74,3 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, '0.0.0.0', () =>
   console.log(`🚀 Server running on port ${PORT}`)
 );
-
-app.get("/", (req, res) => {
-  res.send("Backend is running!");
-});
