@@ -9,7 +9,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',  // backend server URL
+        target: 'https://virtual-stock-simulator.onrender.com/',  // backend server URL
         changeOrigin: true,
         secure: false,
       },
