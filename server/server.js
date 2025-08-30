@@ -41,7 +41,7 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: "https://virtual-stock-simulator-qwe1.vercel.app",
+  origin: "https://virtual-stock-simulator-2znc.vercel.app",
   credentials: true,
 }));
 app.use(express.json());
