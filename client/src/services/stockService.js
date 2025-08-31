@@ -2,7 +2,7 @@ import axios from "axios";
 
 // Create a reusable Axios instance with a predefined base URL for all API calls.
 const apiClient = axios.create({
-    baseURL: `${import.meta.env.REACT_APP_API_URL}/api`,
+    baseURL: `${import.meta.env.VITE_API_URLL}/api`,
     headers: { "Content-Type": "application/json" },
 });
 
