@@ -43,7 +43,7 @@ app.use(cors({
   origin: ["https://virtual-stock-simulator-2znc.vercel.app",
            "http://localhost:5173" ,
           "https://virtual-stock-simulator-768i.vercel.app",
-          "virtual-stock-simulator-qwe1.vercel.app",
+          "https://virtual-stock-simulator-qwe1.vercel.app/",
         "http://localhost:5174"],
   credentials: true,
 }));
