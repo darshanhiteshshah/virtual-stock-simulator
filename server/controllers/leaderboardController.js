@@ -1,9 +1,9 @@
 const User = require("../models/User");
 const Decimal = require("decimal.js");
 // 🔽 BEFORE (using mock data)
-// const { getMockStockData } = require("../utils/mockStockService");
+const { getMockStockData } = require("../utils/mockStockService");
 // ✅ AFTER (using the new, efficient market data service)
-const { fetchMultipleLivePrices } = require("../utils/marketDataService");
+//const { fetchMultipleLivePrices } = require("../utils/marketDataService");
 
 /**
  * @desc    Get the top users by net worth
