@@ -9,7 +9,6 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Trade from "./pages/Trade";
 import TransactionHistory from "./pages/TransactionHistory";
-import Leaderboard from "./pages/Leaderboard";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import Watchlist from "./pages/watchList";
 import Profile from "./pages/Profile";
@@ -56,10 +55,6 @@ function App() {
                 <Route 
                     path="/transactions" 
                     element={<ProtectedRoute><Layout><PageWrapper><TransactionHistory /></PageWrapper></Layout></ProtectedRoute>} 
-                />
-                <Route 
-                    path="/leaderboard" 
-                    element={<ProtectedRoute><Layout><PageWrapper><Leaderboard /></PageWrapper></Layout></ProtectedRoute>} 
                 />
                 <Route 
                     path="/screener" 

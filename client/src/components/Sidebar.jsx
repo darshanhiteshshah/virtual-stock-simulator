@@ -36,9 +36,6 @@ const Sidebar = () => {
                 <NavLink to="/transactions" className={({ isActive }) => `${linkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses}`}>
                     <History size={20} /> Transactions
                 </NavLink>
-                <NavLink to="/leaderboard" className={({ isActive }) => `${linkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses}`}>
-                    <Trophy size={20} /> Leaderboard
-                </NavLink>
                 <NavLink to="/alerts" className={({ isActive }) => `${linkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses}`}>
                     <Bell size={20} /> Price Alerts
                 </NavLink>

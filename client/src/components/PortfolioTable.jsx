@@ -2,7 +2,7 @@ import React from 'react';
 import { formatCurrency } from '../utils/currencyFormatter';
 import { ArrowUpRight, ArrowDownRight, Briefcase } from "lucide-react";
 import { motion } from "framer-motion";
-import {Link} from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 const PortfolioTable = ({ stocks, isLoading }) => {
     const renderLoadingSkeleton = () => (
@@ -25,14 +25,14 @@ const PortfolioTable = ({ stocks, isLoading }) => {
             opacity: 1,
             y: 0,
             transition: {
-                delay: i * 0.1, // Stagger each row by 0.1s
+                delay: i * 0.1,
                 duration: 0.4,
             },
         }),
     };
 
     return (
-        <motion.div 
+        <motion.div
             className="overflow-x-auto bg-gray-900 rounded-2xl shadow-xl p-6 mt-6 border border-gray-800"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -54,11 +54,13 @@ const PortfolioTable = ({ stocks, isLoading }) => {
                     </tr>
                 </thead>
                 <tbody>
-                    {isLoading && stocks.length === 0 ? renderLoadingSkeleton() : (
+                    {isLoading && stocks.length === 0 ? (
+                        renderLoadingSkeleton()
+                    ) : (
                         stocks.length > 0 ? (
                             stocks.map((stock, index) => (
-                                <motion.tr 
-                                    key={stock.symbol} 
+                                <motion.tr
+                                    key={stock.symbol}
                                     className="border-b border-gray-800 hover:bg-gray-800/50 transition-colors duration-200"
                                     custom={index}
                                     variants={rowVariants}
@@ -66,26 +68,42 @@ const PortfolioTable = ({ stocks, isLoading }) => {
                                     animate="visible"
                                 >
                                     <td className="px-6 py-4">
-                                        <div className="font-semibold text-blue-300 uppercase">{stock.symbol}</div>
-                                        <div className="text-xs text-gray-500 whitespace-nowrap">{stock.name}</div>
+                                        <Link
+                                            to={`/stock/${stock.symbol}`}
+                                            className="font-semibold text-blue-300 uppercase hover:underline"
+                                        >
+                                            {stock.symbol}
+                                        </Link>
+                                        <div className="text-xs text-gray-500 whitespace-nowrap">
+                                            {stock.name}
+                                        </div>
                                     </td>
                                     <td className="px-6 py-4">{stock.quantity}</td>
-                                    <td className="px-6 py-4 text-gray-400">{formatCurrency(stock.avgBuyPrice)}</td>
-                                    <td className="px-6 py-4 text-yellow-300 font-medium">{formatCurrency(parseFloat(stock.currentPrice))}</td>
+                                    <td className="px-6 py-4 text-gray-400">
+                                        {formatCurrency(stock.avgBuyPrice)}
+                                    </td>
+                                    <td className="px-6 py-4 text-yellow-300 font-medium">
+                                        {formatCurrency(parseFloat(stock.currentPrice))}
+                                    </td>
                                     <td className={`px-6 py-4 font-medium flex items-center gap-1.5 ${stock.dayChangePercent >= 0 ? "text-green-500" : "text-red-500"}`}>
-                                        {stock.dayChangePercent >= 0 ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
+                                        {stock.dayChangePercent >= 0 ? (
+                                            <ArrowUpRight size={16} />
+                                        ) : (
+                                            <ArrowDownRight size={16} />
+                                        )}
                                         {stock.dayChangePercent.toFixed(2)}%
                                     </td>
-                                    <td className="px-6 py-4 font-bold text-white">{formatCurrency(stock.totalValue)}</td>
+                                    <td className="px-6 py-4 font-bold text-white">
+                                        {formatCurrency(stock.totalValue)}
+                                    </td>
                                     <td className={`px-6 py-4 font-semibold flex items-center gap-1.5 ${stock.profitLoss >= 0 ? "text-green-400" : "text-red-400"}`}>
-                                        {stock.profitLoss >= 0 ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
+                                        {stock.profitLoss >= 0 ? (
+                                            <ArrowUpRight size={16} />
+                                        ) : (
+                                            <ArrowDownRight size={16} />
+                                        )}
                                         {formatCurrency(stock.profitLoss).replace('₹', '')}
                                     </td>
-                                    {/* --- MODIFIED: Wrap symbol in a Link --- */}
-    <Link to={`/stock/${stock.symbol}`} className="font-semibold text-blue-300 uppercase hover:underline">
-        {stock.symbol}
-    </Link>
-    <div className="text-xs text-gray-500 whitespace-nowrap">{stock.name}</div>
                                 </motion.tr>
                             ))
                         ) : (
