@@ -1,48 +1,109 @@
-import { Link, NavLink } from "react-router-dom";
-import useAuth  from "../hooks/useAuth";
-import { LayoutDashboard, ArrowLeftRight, History, Trophy, Star, Thermometer } from "lucide-react"; // Added Thermometer icon
-import { Bell } from "lucide-react"; 
-import { Award ,Filter} from "lucide-react";
+import { NavLink } from "react-router-dom";
+import useAuth from "../hooks/useAuth";
+import { 
+    LayoutDashboard, 
+    TrendingUp, 
+    Star, 
+    History, 
+    Bell, 
+    Award, 
+    Filter, 
+    Gauge
+} from "lucide-react";
+
 const Sidebar = () => {
     const { user } = useAuth();
     if (!user) return null;
 
-    const linkClasses = "flex items-center gap-3 px-4 py-2 rounded-lg transition-colors";
-    const activeLinkClasses = "bg-orange-500/10 text-orange-400";
-    const inactiveLinkClasses = "hover:bg-gray-700/50 text-gray-300";
+    const linkClasses = "flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 text-sm font-medium";
+    const activeLinkClasses = "bg-blue-600 text-white shadow-lg shadow-blue-900/30";
+    const inactiveLinkClasses = "text-slate-400 hover:text-white hover:bg-slate-800/50";
 
     return (
-        <aside className="w-64 bg-gray-900 text-gray-100 p-4 border-r border-gray-800 flex flex-col">
-            <div className="text-2xl font-bold text-orange-400 p-4 text-center">
-                VirtualSim
+        <aside className="w-64 bg-slate-900/50 backdrop-blur-xl border-r border-slate-800/50 flex flex-col">
+            {/* Logo */}
+            <div className="p-6 border-b border-slate-800/50">
+                <h1 className="text-2xl font-bold text-white">VSM</h1>
+                <p className="text-xs text-slate-500 mt-1">Virtual Stock Market</p>
             </div>
-            <nav className="flex flex-col gap-2 mt-8">
-                <NavLink to="/dashboard" className={({ isActive }) => `${linkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses}`}>
-                    <LayoutDashboard size={20} /> Dashboard
+
+            {/* Navigation */}
+            <nav className="flex flex-col gap-1 p-4 flex-1">
+                <NavLink 
+                    to="/dashboard" 
+                    className={({ isActive }) => `${linkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses}`}
+                >
+                    <LayoutDashboard size={20} />
+                    <span>Dashboard</span>
                 </NavLink>
-                <NavLink to="/trade" className={({ isActive }) => `${linkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses}`}>
-                    <ArrowLeftRight size={20} /> Trade
+
+                <NavLink 
+                    to="/trade" 
+                    className={({ isActive }) => `${linkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses}`}
+                >
+                    <TrendingUp size={20} />
+                    <span>Trade</span>
                 </NavLink>
-                <NavLink to="/watchlist" className={({ isActive }) => `${linkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses}`}>
-                    <Star size={20} /> Watchlist
+
+                <NavLink 
+                    to="/watchlist" 
+                    className={({ isActive }) => `${linkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses}`}
+                >
+                    <Star size={20} />
+                    <span>Watchlist</span>
                 </NavLink>
-                <NavLink to="/screener" className={({ isActive }) => `${linkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses}`}>
-                    <Filter size={20} /> Screener
+
+                <NavLink 
+                    to="/screener" 
+                    className={({ isActive }) => `${linkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses}`}
+                >
+                    <Filter size={20} />
+                    <span>Screener</span>
                 </NavLink>
-                {/* --- NEW LINK --- */}
-                <NavLink to="/sentiment" className={({ isActive }) => `${linkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses}`}>
-                    <Thermometer size={20} /> Sentiment
+
+                <NavLink 
+                    to="/sentiment" 
+                    className={({ isActive }) => `${linkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses}`}
+                >
+                    <Gauge size={20} />
+                    <span>Sentiment</span>
                 </NavLink>
-                <NavLink to="/transactions" className={({ isActive }) => `${linkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses}`}>
-                    <History size={20} /> Transactions
+
+                {/* Divider */}
+                <div className="my-3 border-t border-slate-800/50"></div>
+
+                <NavLink 
+                    to="/transactions" 
+                    className={({ isActive }) => `${linkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses}`}
+                >
+                    <History size={20} />
+                    <span>Transactions</span>
                 </NavLink>
-                <NavLink to="/alerts" className={({ isActive }) => `${linkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses}`}>
-                    <Bell size={20} /> Price Alerts
+
+                <NavLink 
+                    to="/alerts" 
+                    className={({ isActive }) => `${linkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses}`}
+                >
+                    <Bell size={20} />
+                    <span>Price Alerts</span>
                 </NavLink>
-                <NavLink to="/achievements" className={({ isActive }) => `${linkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses}`}>
-                    <Award size={20} /> Achievements
+
+                <NavLink 
+                    to="/achievements" 
+                    className={({ isActive }) => `${linkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses}`}
+                >
+                    <Award size={20} />
+                    <span>Achievements</span>
                 </NavLink>
             </nav>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-slate-800/50">
+                <div className="bg-slate-800/50 rounded-lg p-3">
+                    <p className="text-xs text-slate-400 mb-1">Logged in as</p>
+                    <p className="text-sm font-semibold text-white truncate">{user.username}</p>
+                </div>
+            </div>
         </aside>
     );
 };

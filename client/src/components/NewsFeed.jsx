@@ -9,7 +9,6 @@ import { fetchNews } from "../services/newsService";
 
 const Layout = () => {
     const { user } = useAuth();
-
     const [news, setNews] = useState([]);
     const [newsLoading, setNewsLoading] = useState(true);
 
@@ -30,24 +29,24 @@ const Layout = () => {
     }, [user]);
 
     return (
-        <div className="flex h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-slate-100 overflow-hidden">
+        <div className="flex h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white overflow-hidden">
             {/* Sidebar */}
             {user && <Sidebar />}
 
-            {/* Right section: navbar, tickers, main content */}
-            <div className="flex flex-col flex-grow overflow-hidden">
-                {/* Navbar at top */}
+            {/* Main Content Area */}
+            <div className="flex flex-col flex-1 overflow-hidden">
+                {/* Navbar */}
                 <Navbar />
 
-                {/* Stock ticker at top */}
+                {/* Stock Ticker */}
                 {user && <StockTicker />}
 
-                {/* Main content (scrollable) */}
-                <main className="flex-grow overflow-y-auto">
+                {/* Main Content (Scrollable) */}
+                <main className="flex-1 overflow-y-auto">
                     <Outlet />
                 </main>
 
-                {/* News ticker at bottom */}
+                {/* News Feed */}
                 {user && <NewsFeed news={news} isLoading={newsLoading} />}
             </div>
         </div>

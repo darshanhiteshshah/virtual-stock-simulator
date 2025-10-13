@@ -7,20 +7,20 @@ const Layout = ({ children }) => {
     const { user } = useAuth();
 
     return (
-        <div className="flex h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-gray-100 overflow-hidden">
+        <div className="flex h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white overflow-hidden">
             
-            {/* The sidebar is only rendered when a user is logged in */}
+            {/* Sidebar - only shown when user is logged in */}
             {user && <Sidebar />}
             
-            {/* This container holds the main content and grows to fill available space */}
+            {/* Main content area */}
             <div className="flex flex-col flex-grow overflow-hidden">
                 <Navbar />
                 
-                {/* The stock ticker is also conditionally rendered for logged-in users */}
+                {/* Stock ticker - only shown when user is logged in */}
                 {user && <StockTicker />}
                 
-                {/* The main content area fills the remaining vertical space and becomes scrollable if needed */}
-                <main className="flex-grow p-6 overflow-y-auto">
+                {/* Main content with custom scrollbar */}
+                <main className="flex-grow overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-slate-900">
                     {children}
                 </main>
             </div>
