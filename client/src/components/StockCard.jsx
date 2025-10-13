@@ -1,6 +1,6 @@
-import { ArrowUpRight, ArrowDownRight, Activity, BarChart2 } from "lucide-react";
-import { motion } from "framer-motion";
-import { formatCurrency } from "../utils/currencyFormatter"; // Assuming you have this utility
+import { ArrowUpRight, ArrowDownRight, TrendingUp } from "lucide-react";
+import { formatCurrency } from "../utils/currencyFormatter";
+import { Link } from "react-router-dom";
 
 /**
  * A reusable card component to display live information about a single stock.
@@ -18,11 +18,9 @@ const StockCard = ({
     previousClose = 0,
     volume = 0
 }) => {
-    // Ensure price is a valid number, defaulting to 0 if not.
     const parsedPrice = parseFloat(price) || 0;
     const priceChange = parsedPrice - previousClose;
 
-    // Calculate the percentage change for the day, handling division by zero.
     const percentageChange = previousClose !== 0
         ? ((priceChange / previousClose) * 100)
         : 0;
@@ -30,48 +28,56 @@ const StockCard = ({
     const isPositiveChange = priceChange >= 0;
 
     return (
-        <motion.div
-            className="rounded-2xl shadow-lg p-6 bg-gray-900 border border-gray-700 hover:border-orange-400/50 transition-all duration-300"
-            whileHover={{ y: -5 }}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+        <Link 
+            to={`/stock/${symbol}`}
+            className="block bg-slate-900/50 backdrop-blur-sm border border-slate-800/50 rounded-xl p-5 hover:border-blue-500/50 hover:bg-slate-800/50 transition-all duration-300 group"
         >
-            {/* Header with Stock Name and Symbol */}
-            <div className="flex items-center gap-3 mb-4">
-                <div className="bg-orange-500/10 p-2 rounded-lg">
-                    <Activity className="text-orange-400" size={20} />
+            {/* Header with Stock Symbol and Name */}
+            <div className="flex items-start justify-between mb-4">
+                <div className="flex-1 min-w-0">
+                    <h3 className="text-lg font-bold text-white mb-1 truncate group-hover:text-blue-400 transition-colors">
+                        {symbol}
+                    </h3>
+                    <p className="text-xs text-slate-500 truncate">{name}</p>
                 </div>
-                <div>
-                    <h3 className="text-lg font-bold text-gray-100">{name}</h3>
-                    <p className="text-sm font-mono text-blue-400">{symbol}</p>
+                <div className={`p-2 rounded-lg ${
+                    isPositiveChange 
+                        ? 'bg-emerald-500/10 border border-emerald-500/20' 
+                        : 'bg-red-500/10 border border-red-500/20'
+                }`}>
+                    <TrendingUp 
+                        size={18} 
+                        className={isPositiveChange ? 'text-emerald-400' : 'text-red-400 rotate-180'}
+                    />
                 </div>
             </div>
 
-            {/* Price and Daily Change */}
-            <div className="flex justify-between items-baseline mb-5">
-                <div className="text-4xl font-extrabold text-white">
+            {/* Price */}
+            <div className="mb-4">
+                <div className="text-3xl font-bold text-white mb-1">
                     {formatCurrency(parsedPrice)}
                 </div>
-                <div
-                    className={`flex items-center gap-1 text-lg font-semibold ${
-                        isPositiveChange ? "text-green-400" : "text-red-400"
-                    }`}
-                >
-                    {isPositiveChange ? <ArrowUpRight size={20} /> : <ArrowDownRight size={20} />}
-                    {percentageChange.toFixed(2)}%
+                <div className={`flex items-center gap-1.5 text-sm font-semibold ${
+                    isPositiveChange ? "text-emerald-400" : "text-red-400"
+                }`}>
+                    {isPositiveChange ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
+                    <span>
+                        {isPositiveChange ? '+' : ''}{formatCurrency(Math.abs(priceChange))}
+                    </span>
+                    <span className="text-xs">
+                        ({isPositiveChange ? '+' : ''}{percentageChange.toFixed(2)}%)
+                    </span>
                 </div>
             </div>
 
             {/* Volume */}
-            <div className="flex items-center gap-2 text-sm text-gray-400 border-t border-gray-700 pt-4">
-                <BarChart2 size={16} />
-                <span>Volume:</span>
-                <span className="font-medium text-gray-300">
-                    {volume ? volume.toLocaleString() : "N/A"}
+            <div className="flex items-center justify-between pt-3 border-t border-slate-800/50">
+                <span className="text-xs text-slate-500">Volume</span>
+                <span className="text-xs font-semibold text-slate-300">
+                    {volume ? (volume / 1000000).toFixed(2) + 'M' : "N/A"}
                 </span>
             </div>
-        </motion.div>
+        </Link>
     );
 };
 
