@@ -239,3 +239,38 @@ exports.getStockProfile = async (req, res) => {
         });
     }
 };
+
+const { getMLPrediction } = require('../services/mlPredictionService');
+
+exports.getPrediction = async (req, res) => {
+    try {
+        const { symbol } = req.params;
+        const { days = 7 } = req.query;
+        
+        console.log(`🔮 Getting prediction for ${symbol}`);
+        
+        const prediction = await getMLPrediction(symbol, parseInt(days));
+        
+        if (!prediction.success) {
+            return res.status(503).json({
+                success: false,
+                message: prediction.error,
+                fallback: prediction.fallback
+            });
+        }
+        
+        res.status(200).json({
+            success: true,
+            ...prediction,
+            disclaimer: '⚠️ Educational purposes only'
+        });
+        
+    } catch (error) {
+        console.error('Prediction error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Prediction failed',
+            error: error.message
+        });
+    }
+};

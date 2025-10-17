@@ -9,6 +9,7 @@ import StockCard from "../components/StockCard";
 import StockChart from "../components/StockChart";
 import CandlestickChart from "../components/CandlestickChart";
 import StockDetails from "../components/StockDetails";
+import MLPrediction from '../components/MLPrediction';
 
 const Trade = () => {
     const { user, loading: authLoading } = useAuth();
@@ -165,7 +166,7 @@ const Trade = () => {
                 {/* Header */}
                 <div className="border-b border-slate-800 pb-4">
                     <h1 className="text-2xl font-bold">Live Trading</h1>
-                    <p className="text-sm text-slate-400 mt-1">Real-time trading with Yahoo Finance BSE data</p>
+                    <p className="text-sm text-slate-400 mt-1">Real-time trading with Yahoo Finance BSE data & AI predictions</p>
                 </div>
 
                 {/* Wallet & Stock Selector Row */}
@@ -229,7 +230,7 @@ const Trade = () => {
                             <StockDetails stockData={stockData} />
                         </div>
 
-                        {/* Right: Trading */}
+                        {/* Right: Trading & AI */}
                         <div className="space-y-4">
                             {/* Holdings */}
                             <div className="bg-slate-900 border border-slate-800 rounded p-4">
@@ -243,6 +244,9 @@ const Trade = () => {
                                     </div>
                                 )}
                             </div>
+
+                            {/* ML Prediction - NEW! */}
+                            <MLPrediction symbol={symbol} token={token} />
 
                             {/* Order Type */}
                             <div className="bg-slate-900 border border-slate-800 rounded p-4">
