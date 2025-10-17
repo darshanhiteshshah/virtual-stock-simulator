@@ -1,6 +1,6 @@
 // server/utils/alertChecker.js
 const User = require("../models/User");
-const { getMockStockData } = require("../services/StockService"); // Fixed path
+const { getMockStockData } = require("../services/stockService"); // Fixed path
 const { sendTransactionEmail } = require("./emailService");
 
 /**

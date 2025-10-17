@@ -5,7 +5,7 @@ const {
     getHistoryForSymbol,
     getAvailableStocks,
     stockTemplates 
-} = require("../services/StockService.js");
+} = require("../services/stockService.js");
 const { getNewsForSymbol } = require("../utils/newsService");
 
 /**
