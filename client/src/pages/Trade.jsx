@@ -9,10 +9,6 @@ import StockCard from "../components/StockCard";
 import StockChart from "../components/StockChart";
 import CandlestickChart from "../components/CandlestickChart";
 import StockDetails from "../components/StockDetails";
-import { Wallet, Briefcase, Bell, Star, BarChart3, CandlestickChart as CandleIcon, ShoppingCart, Banknote } from "lucide-react";
-import { getWatchlist, addToWatchlist, removeFromWatchlist } from "../services/watchlistService";
-import { createAlert } from "../services/alertService";
-import PendingOrdersTable from "../components/PendingOrdersTable";
 
 const Trade = () => {
     const { user, loading: authLoading } = useAuth();
@@ -24,12 +20,8 @@ const Trade = () => {
     const [quantity, setQuantity] = useState(1);
     const [tradeLoading, setTradeLoading] = useState(false);
     const [tradeMessage, setTradeMessage] = useState({ type: '', text: '' });
-    const [watchlist, setWatchlist] = useState([]);
     const [historyData, setHistoryData] = useState([]);
     const [historyLoading, setHistoryLoading] = useState(false);
-    const [alertPrice, setAlertPrice] = useState('');
-    const [alertCondition, setAlertCondition] = useState('below');
-    const [alertMessage, setAlertMessage] = useState({ type: '', text: '' });
     const [chartType, setChartType] = useState('line');
     const [orderType, setOrderType] = useState('MARKET');
     const [targetPrice, setTargetPrice] = useState('');
@@ -37,13 +29,12 @@ const Trade = () => {
 
     const stockData = useMemo(() => stockPrices.find(s => s.symbol === symbol), [symbol, stockPrices]);
     const currentHolding = useMemo(() => portfolio.find(s => s.symbol.toLowerCase() === (symbol || "").toLowerCase()), [portfolio, symbol]);
-    const isStockInWatchlist = useMemo(() => watchlist.includes(symbol), [watchlist, symbol]);
 
     const fetchPendingOrders = useCallback(async () => {
         if (token && !authLoading) {
             try {
-                const orders = await getPendingOrders(token);
-                setPendingOrders(orders);
+                const data = await getPendingOrders(token);
+                setPendingOrders(data.orders || data || []);
             } catch (error) {
                 console.error("Failed to fetch pending orders", error);
             }
@@ -55,19 +46,10 @@ const Trade = () => {
     }, [symbol]);
 
     useEffect(() => {
-        const loadData = async () => {
-            if (token && !authLoading) {
-                try {
-                    const res = await getWatchlist(token);
-                    setWatchlist(res.data);
-                } catch (error) {
-                    console.error("Failed to load watchlist", error);
-                }
-                fetchPendingOrders();
-            }
-        };
-        loadData();
-    }, [token, authLoading, fetchPendingOrders]);
+        fetchPendingOrders();
+        const interval = setInterval(fetchPendingOrders, 10000);
+        return () => clearInterval(interval);
+    }, [fetchPendingOrders]);
 
     useEffect(() => {
         if (!symbol && stockPrices.length > 0) {
@@ -112,6 +94,7 @@ const Trade = () => {
             const action = tradeType === 'BUY' ? buyStock : sellStock;
             const res = await action(stockData.symbol, quantity, token);
             setTradeMessage({ type: 'success', text: res.message });
+            setTimeout(() => setTradeMessage({ type: '', text: '' }), 3000);
             await refetchPortfolio();
         } catch (err) {
             setTradeMessage({ type: 'error', text: err.response?.data?.message || `Failed to ${tradeType.toLowerCase()} stock.` });
@@ -146,7 +129,8 @@ const Trade = () => {
                 tradeType,
             };
             const res = await placeOrder(orderData, token);
-            setTradeMessage({ type: 'success', text: res.message });
+            setTradeMessage({ type: 'success', text: res.message || 'Order placed successfully' });
+            setTimeout(() => setTradeMessage({ type: '', text: '' }), 3000);
             setTargetPrice('');
             fetchPendingOrders();
         } catch (err) {
@@ -156,353 +140,236 @@ const Trade = () => {
         }
     };
 
-    const handleWatchlistToggle = async () => {
-        if (!symbol || !token) return;
-        try {
-            const action = isStockInWatchlist ? removeFromWatchlist : addToWatchlist;
-            const res = await action(symbol, token);
-            setWatchlist(res.data);
-        } catch (error) {
-            console.error("Failed to update watchlist", error);
-        }
-    };
-    
     const handleCancelOrder = async (orderId) => {
         try {
             await cancelOrder(orderId, token);
+            setTradeMessage({ type: 'success', text: 'Order cancelled' });
+            setTimeout(() => setTradeMessage({ type: '', text: '' }), 2000);
             fetchPendingOrders();
         } catch (error) {
-            console.error("Failed to cancel order", error);
-        }
-    };
-
-    const handleCreateAlert = async (e) => {
-        e.preventDefault();
-        setAlertMessage({ type: '', text: '' });
-        if (!symbol || !alertPrice || isNaN(alertPrice) || alertPrice <= 0) {
-            setAlertMessage({ type: 'error', text: 'Please enter a valid target price.' });
-            return;
-        }
-        try {
-            await createAlert({ symbol, targetPrice: parseFloat(alertPrice), condition: alertCondition }, token);
-            setAlertMessage({ type: 'success', text: `Alert set for ${symbol}!` });
-            setAlertPrice('');
-        } catch (error) {
-            setAlertMessage({ type: 'error', text: 'Failed to set alert.' });
-            console.error("Failed to create alert", error);
+            setTradeMessage({ type: 'error', text: 'Failed to cancel order' });
         }
     };
 
     if (authLoading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
-                <div className="flex flex-col items-center gap-3">
-                    <div className="w-12 h-12 border-4 border-slate-700 border-t-blue-500 rounded-full animate-spin"></div>
-                    <p className="text-slate-400 text-sm">Loading...</p>
-                </div>
+            <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+                <div className="text-slate-500">Loading...</div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6">
-            <div className="max-w-7xl mx-auto space-y-6">
+        <div className="min-h-screen bg-slate-950 text-white p-6">
+            <div className="max-w-7xl mx-auto space-y-4">
                 {/* Header */}
-                <div>
-                    <h1 className="text-3xl font-bold text-white mb-2">Live Trading</h1>
-                    <p className="text-slate-400 text-sm">Trade stocks in real-time with live market data</p>
+                <div className="border-b border-slate-800 pb-4">
+                    <h1 className="text-2xl font-bold">Live Trading</h1>
+                    <p className="text-sm text-slate-400 mt-1">Real-time trading with Yahoo Finance BSE data</p>
                 </div>
 
-                {/* Wallet Balance */}
-                <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-800/50 rounded-xl p-6">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
-                                <Wallet className="w-6 h-6 text-emerald-400" />
-                            </div>
-                            <div>
-                                <p className="text-sm text-slate-400 mb-1">Wallet Balance</p>
-                                <p className="text-3xl font-bold text-white">{formatCurrency(walletBalance)}</p>
-                            </div>
-                        </div>
+                {/* Wallet & Stock Selector Row */}
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-slate-900 border border-slate-800 rounded p-4">
+                        <div className="text-sm text-slate-400 mb-1">Wallet Balance</div>
+                        <div className="text-2xl font-bold text-emerald-400">{formatCurrency(walletBalance)}</div>
+                    </div>
+                    <div className="bg-slate-900 border border-slate-800 rounded p-4">
+                        <label className="text-sm text-slate-400 block mb-2">Select Stock</label>
+                        <select
+                            value={symbol}
+                            onChange={(e) => setSymbol(e.target.value)}
+                            className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                            disabled={pricesLoading}
+                        >
+                            {pricesLoading ? (
+                                <option>Loading...</option>
+                            ) : (
+                                stockPrices.map(stock => (
+                                    <option key={stock.symbol} value={stock.symbol}>
+                                        {stock.name} ({stock.symbol})
+                                    </option>
+                                ))
+                            )}
+                        </select>
                     </div>
                 </div>
-
-                {/* Stock Selector */}
-                <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-800/50 rounded-xl p-6">
-                    <label htmlFor="stock-select" className="block mb-3 text-sm font-medium text-slate-300">
-                        Select Stock
-                    </label>
-                    <select
-                        id="stock-select"
-                        value={symbol}
-                        onChange={(e) => setSymbol(e.target.value)}
-                        className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-lg focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all text-white"
-                        disabled={pricesLoading || stockPrices.length === 0}
-                    >
-                        {pricesLoading && stockPrices.length === 0 ? (
-                            <option>Loading stocks...</option>
-                        ) : (
-                            stockPrices.map(stock => (
-                                <option key={stock.symbol} value={stock.symbol}>
-                                    {stock.name} ({stock.symbol})
-                                </option>
-                            ))
-                        )}
-                    </select>
-                </div>
-
-                {pricesLoading && !stockData && (
-                    <div className="text-center p-8">
-                        <div className="w-12 h-12 border-4 border-slate-700 border-t-blue-500 rounded-full animate-spin mx-auto mb-3"></div>
-                        <p className="text-slate-400 text-sm">Loading market data...</p>
-                    </div>
-                )}
 
                 {stockData && (
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        {/* Left Column: Chart & Details */}
-                        <div className="lg:col-span-2 space-y-6">
-                            {/* Stock Card with Chart */}
-                            <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-800/50 rounded-xl p-6">
-                                <div className="flex items-start justify-between mb-6">
-                                    <div className="flex-1">
-                                        <StockCard {...stockData} />
-                                    </div>
+                    <div className="grid grid-cols-3 gap-4">
+                        {/* Left: Chart */}
+                        <div className="col-span-2 space-y-4">
+                            <div className="bg-slate-900 border border-slate-800 rounded p-4">
+                                <StockCard {...stockData} />
+                                
+                                <div className="flex gap-2 mt-4 mb-4">
                                     <button 
-                                        onClick={handleWatchlistToggle} 
-                                        className="p-2 hover:bg-slate-800/50 rounded-lg transition-colors"
-                                        title={isStockInWatchlist ? "Remove from watchlist" : "Add to watchlist"}
+                                        onClick={() => setChartType('line')}
+                                        className={`px-4 py-2 rounded text-sm ${chartType === 'line' ? 'bg-blue-600' : 'bg-slate-800 hover:bg-slate-700'}`}
                                     >
-                                        <Star 
-                                            size={24} 
-                                            className={isStockInWatchlist ? "text-yellow-400 fill-yellow-400" : "text-slate-500"} 
-                                        />
+                                        Line Chart
+                                    </button>
+                                    <button 
+                                        onClick={() => setChartType('candlestick')}
+                                        className={`px-4 py-2 rounded text-sm ${chartType === 'candlestick' ? 'bg-blue-600' : 'bg-slate-800 hover:bg-slate-700'}`}
+                                    >
+                                        Candlestick
                                     </button>
                                 </div>
 
-                                {/* Chart Toggle */}
-                                <div className="flex items-center justify-between mb-6">
-                                    <h3 className="text-lg font-semibold text-white">Price Chart</h3>
-                                    <div className="inline-flex bg-slate-800/50 rounded-lg p-1 border border-slate-700/50">
-                                        <button 
-                                            onClick={() => setChartType('line')} 
-                                            className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 flex items-center gap-2 ${
-                                                chartType === 'line' 
-                                                    ? 'bg-blue-600 text-white shadow-lg' 
-                                                    : 'text-slate-400 hover:text-white'
-                                            }`}
-                                        >
-                                            <BarChart3 size={16} />
-                                            Line
-                                        </button>
-                                        <button 
-                                            onClick={() => setChartType('candlestick')} 
-                                            className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 flex items-center gap-2 ${
-                                                chartType === 'candlestick' 
-                                                    ? 'bg-blue-600 text-white shadow-lg' 
-                                                    : 'text-slate-400 hover:text-white'
-                                            }`}
-                                        >
-                                            <CandleIcon size={16} />
-                                            Candlestick
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {/* Chart */}
                                 {historyLoading ? (
-                                    <div className="h-80 w-full bg-slate-800/30 rounded-lg animate-pulse"></div>
+                                    <div className="h-80 bg-slate-800 rounded"></div>
                                 ) : (
-                                    chartType === 'line' ? (
-                                        <StockChart data={historyData} symbol={symbol} />
-                                    ) : (
+                                    chartType === 'line' ? 
+                                        <StockChart data={historyData} symbol={symbol} /> :
                                         <CandlestickChart data={historyData} />
-                                    )
                                 )}
                             </div>
 
-                            {/* Stock Details */}
                             <StockDetails stockData={stockData} />
                         </div>
 
-                        {/* Right Column: Trading Panel */}
-                        <div className="lg:col-span-1 space-y-6">
-                            {/* Holdings Card */}
-                            <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-800/50 rounded-xl p-6">
-                                <div className="flex items-center gap-3 mb-4">
-                                    <div className="p-2 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                                        <Briefcase className="w-5 h-5 text-blue-400" />
-                                    </div>
-                                    <h3 className="text-lg font-semibold text-white">Your Holdings</h3>
-                                </div>
-                                <p className="text-3xl font-bold text-blue-400 mb-2">
+                        {/* Right: Trading */}
+                        <div className="space-y-4">
+                            {/* Holdings */}
+                            <div className="bg-slate-900 border border-slate-800 rounded p-4">
+                                <div className="text-sm text-slate-400 mb-2">Your Holdings</div>
+                                <div className="text-2xl font-bold text-blue-400">
                                     {currentHolding ? currentHolding.quantity : 0} Shares
-                                </p>
+                                </div>
                                 {currentHolding && (
-                                    <p className="text-sm text-slate-400">
-                                        Avg. Buy: {formatCurrency(currentHolding.avgBuyPrice)}
-                                    </p>
+                                    <div className="text-sm text-slate-500 mt-1">
+                                        Avg: {formatCurrency(currentHolding.avgBuyPrice)}
+                                    </div>
                                 )}
                             </div>
 
-                            {/* Order Panel */}
-                            <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-800/50 rounded-xl p-6">
-                                <h3 className="text-lg font-semibold text-white mb-4">Place Order</h3>
-
-                                {/* Order Type Tabs */}
-                                <div className="grid grid-cols-3 gap-2 mb-6 bg-slate-800/30 p-1 rounded-lg">
+                            {/* Order Type */}
+                            <div className="bg-slate-900 border border-slate-800 rounded p-4">
+                                <div className="text-sm text-slate-400 mb-3">Order Type</div>
+                                <div className="grid grid-cols-3 gap-2">
                                     {['MARKET', 'LIMIT', 'STOP_LOSS'].map((type) => (
                                         <button
                                             key={type}
                                             onClick={() => setOrderType(type)}
-                                            className={`py-2 rounded-md text-xs font-medium transition-all duration-200 ${
+                                            className={`py-2 rounded text-xs ${
                                                 orderType === type
                                                     ? 'bg-blue-600 text-white'
-                                                    : 'text-slate-400 hover:text-white'
+                                                    : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
                                             }`}
                                         >
                                             {type.replace('_', ' ')}
                                         </button>
                                     ))}
                                 </div>
+                            </div>
 
-                                {/* Input Fields */}
-                                <div className="space-y-4 mb-6">
+                            {/* Trade Form */}
+                            <div className="bg-slate-900 border border-slate-800 rounded p-4">
+                                <div className="space-y-3">
                                     <div>
-                                        <label className="block mb-2 text-sm font-medium text-slate-300">Quantity</label>
+                                        <label className="text-sm text-slate-400 block mb-2">Quantity</label>
                                         <input
                                             type="number"
                                             value={quantity}
                                             onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                                            min="1"
-                                            className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-lg focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all text-white"
+                                            className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
                                         />
                                     </div>
 
                                     {orderType !== 'MARKET' && (
                                         <div>
-                                            <label className="block mb-2 text-sm font-medium text-slate-300">Target Price</label>
+                                            <label className="text-sm text-slate-400 block mb-2">Target Price</label>
                                             <input
                                                 type="number"
                                                 value={targetPrice}
                                                 onChange={(e) => setTargetPrice(e.target.value)}
-                                                placeholder="Enter target price"
-                                                className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-lg focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all text-white placeholder-slate-500"
+                                                placeholder="Enter price"
+                                                className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
                                             />
                                         </div>
                                     )}
-                                </div>
 
-                                {/* Order Summary */}
-                                {stockData && orderType === 'MARKET' && (
-                                    <div className="bg-slate-800/30 rounded-lg p-4 mb-6 space-y-2 text-sm">
-                                        <div className="flex justify-between text-slate-400">
-                                            <span>Subtotal:</span>
-                                            <span>{formatCurrency(parseFloat(stockData.price) * quantity)}</span>
+                                    {stockData && orderType === 'MARKET' && (
+                                        <div className="bg-slate-800 rounded p-3 text-sm">
+                                            <div className="flex justify-between mb-1">
+                                                <span className="text-slate-400">Subtotal:</span>
+                                                <span>{formatCurrency(parseFloat(stockData.price) * quantity)}</span>
+                                            </div>
+                                            <div className="flex justify-between mb-1">
+                                                <span className="text-slate-400">Brokerage:</span>
+                                                <span>{formatCurrency(20)}</span>
+                                            </div>
+                                            <div className="flex justify-between font-bold border-t border-slate-700 pt-2 mt-2">
+                                                <span>Total:</span>
+                                                <span>{formatCurrency(parseFloat(stockData.price) * quantity + 20)}</span>
+                                            </div>
                                         </div>
-                                        <div className="flex justify-between text-slate-400">
-                                            <span>Brokerage:</span>
-                                            <span>{formatCurrency(20)}</span>
-                                        </div>
-                                        <div className="flex justify-between font-semibold text-white pt-2 border-t border-slate-700">
-                                            <span>Total:</span>
-                                            <span>{formatCurrency(parseFloat(stockData.price) * quantity + 20)}</span>
-                                        </div>
+                                    )}
+
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <button
+                                            onClick={() => handlePlaceOrder('BUY')}
+                                            disabled={tradeLoading}
+                                            className="py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:opacity-50 rounded font-semibold"
+                                        >
+                                            {tradeLoading ? 'Processing...' : 'Buy'}
+                                        </button>
+                                        <button
+                                            onClick={() => handlePlaceOrder('SELL')}
+                                            disabled={tradeLoading || (orderType === 'MARKET' && (!currentHolding || currentHolding.quantity < quantity))}
+                                            className="py-3 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:opacity-50 rounded font-semibold"
+                                        >
+                                            {tradeLoading ? 'Processing...' : 'Sell'}
+                                        </button>
                                     </div>
-                                )}
 
-                                {/* Trade Buttons */}
-                                <div className="flex gap-3">
-                                    <button
-                                        onClick={() => handlePlaceOrder('BUY')}
-                                        disabled={tradeLoading}
-                                        className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold rounded-lg transition-all duration-200 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                                    >
-                                        {tradeLoading ? (
-                                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                        ) : (
-                                            <>
-                                                <ShoppingCart size={18} />
-                                                Buy
-                                            </>
-                                        )}
-                                    </button>
-                                    <button
-                                        onClick={() => handlePlaceOrder('SELL')}
-                                        disabled={tradeLoading || (orderType === 'MARKET' && (!currentHolding || currentHolding.quantity < quantity))}
-                                        className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold rounded-lg transition-all duration-200 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                                    >
-                                        {tradeLoading ? (
-                                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                        ) : (
-                                            <>
-                                                <Banknote size={18} />
-                                                Sell
-                                            </>
-                                        )}
-                                    </button>
+                                    {tradeMessage.text && (
+                                        <div className={`text-center text-sm py-2 rounded ${
+                                            tradeMessage.type === 'error'
+                                                ? 'bg-red-900/30 text-red-400 border border-red-800'
+                                                : 'bg-emerald-900/30 text-emerald-400 border border-emerald-800'
+                                        }`}>
+                                            {tradeMessage.text}
+                                        </div>
+                                    )}
                                 </div>
-
-                                {/* Trade Message */}
-                                {tradeMessage.text && (
-                                    <div className={`mt-4 p-3 rounded-lg text-sm text-center ${
-                                        tradeMessage.type === 'error'
-                                            ? 'bg-red-500/10 border border-red-500/20 text-red-400'
-                                            : 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400'
-                                    }`}>
-                                        {tradeMessage.text}
-                                    </div>
-                                )}
                             </div>
 
                             {/* Pending Orders */}
                             {pendingOrders.length > 0 && (
-                                <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-800/50 rounded-xl p-6">
-                                    <h3 className="text-lg font-semibold text-white mb-4">Pending Orders</h3>
-                                    <PendingOrdersTable orders={pendingOrders} onCancel={handleCancelOrder} />
+                                <div className="bg-slate-900 border border-slate-800 rounded p-4">
+                                    <div className="text-sm text-slate-400 mb-3">
+                                        Pending Orders ({pendingOrders.length})
+                                    </div>
+                                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                                        {pendingOrders.map(order => (
+                                            <div key={order._id} className="bg-slate-800 rounded p-3 text-sm">
+                                                <div className="flex justify-between items-start mb-2">
+                                                    <div>
+                                                        <span className="font-bold">{order.symbol}</span>
+                                                        <span className={`ml-2 px-2 py-0.5 rounded text-xs ${
+                                                            order.tradeType === 'BUY' ? 'bg-blue-900 text-blue-300' : 'bg-emerald-900 text-emerald-300'
+                                                        }`}>
+                                                            {order.tradeType}
+                                                        </span>
+                                                        <span className="ml-1 text-slate-400 text-xs">{order.orderType}</span>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => handleCancelOrder(order._id)}
+                                                        className="text-red-400 hover:text-red-300 text-xs"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                </div>
+                                                <div className="text-slate-400">
+                                                    Qty: {order.quantity} • Target: ₹{order.targetPrice || order.stopPrice}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
-
-                            {/* Price Alert */}
-                            <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-800/50 rounded-xl p-6">
-                                <div className="flex items-center gap-2 mb-4">
-                                    <Bell className="w-5 h-5 text-blue-400" />
-                                    <h3 className="text-lg font-semibold text-white">Price Alert</h3>
-                                </div>
-                                <form onSubmit={handleCreateAlert} className="space-y-4">
-                                    <div className="flex gap-2">
-                                        <select
-                                            value={alertCondition}
-                                            onChange={(e) => setAlertCondition(e.target.value)}
-                                            className="px-3 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500/50"
-                                        >
-                                            <option value="below">Below</option>
-                                            <option value="above">Above</option>
-                                        </select>
-                                        <input
-                                            type="number"
-                                            placeholder="Target Price"
-                                            value={alertPrice}
-                                            onChange={(e) => setAlertPrice(e.target.value)}
-                                            className="flex-1 px-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all text-white placeholder-slate-500"
-                                        />
-                                    </div>
-                                    <button
-                                        type="submit"
-                                        className="w-full px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white font-semibold rounded-lg transition-all duration-200"
-                                    >
-                                        Set Alert
-                                    </button>
-                                </form>
-                                {alertMessage.text && (
-                                    <p className={`mt-3 text-sm text-center ${
-                                        alertMessage.type === 'error' ? 'text-red-400' : 'text-emerald-400'
-                                    }`}>
-                                        {alertMessage.text}
-                                    </p>
-                                )}
-                            </div>
                         </div>
                     </div>
                 )}
