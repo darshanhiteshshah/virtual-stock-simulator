@@ -69,16 +69,16 @@ const buyStock = async (req, res) => {
         if (existingHolding) {
             // Calculate new average price
             const totalShares = existingHolding.quantity + quantity;
-            const totalValue = (existingHolding.averagePrice * existingHolding.quantity) + totalCost;
-            existingHolding.averagePrice = totalValue / totalShares;
+            const totalValue = (existingHolding.avgBuyPrice * existingHolding.quantity) + totalCost;
+            existingHolding.avgBuyPrice = totalValue / totalShares;
             existingHolding.quantity = totalShares;
             
-            console.log(`📈 Updated holding: ${existingHolding.quantity} shares at avg ₹${existingHolding.averagePrice.toFixed(2)}`);
+            console.log(`📈 Updated holding: ${existingHolding.quantity} shares at avg ₹${existingHolding.avgBuyPrice.toFixed(2)}`);
         } else {
             user.portfolio.push({
                 symbol,
                 quantity,
-                averagePrice: currentPrice
+                avgBuyPrice: currentPrice
             });
             
             console.log(`🆕 New holding: ${quantity} shares at ₹${currentPrice}`);
