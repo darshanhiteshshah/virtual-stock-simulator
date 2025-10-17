@@ -381,6 +381,7 @@ const getPendingOrders = async (req, res) => {
         const userId = req.user._id;
 
         console.log(`📋 Fetching pending orders for user ${userId}`);
+        console.log(`User ID type: ${typeof userId}, value: ${userId}`); // Debug log
 
         const orders = await PendingOrder.find({
             user: userId,
@@ -390,6 +391,23 @@ const getPendingOrders = async (req, res) => {
             .lean();
 
         console.log(`✅ Found ${orders.length} pending orders`);
+        
+        // Debug: Log one order if exists
+        if (orders.length > 0) {
+            console.log('Sample order:', JSON.stringify(orders[0], null, 2));
+        } else {
+            // Check if ANY orders exist for debugging
+            const allUserOrders = await PendingOrder.find({ user: userId });
+            console.log(`Total orders for user (any status): ${allUserOrders.length}`);
+            
+            if (allUserOrders.length > 0) {
+                console.log('Sample order (any status):', {
+                    status: allUserOrders[0].status,
+                    symbol: allUserOrders[0].symbol,
+                    user: allUserOrders[0].user
+                });
+            }
+        }
 
         res.status(200).json({
             success: true,
@@ -405,6 +423,7 @@ const getPendingOrders = async (req, res) => {
         });
     }
 };
+
 
 /**
  * @desc    Get all orders (pending, executed, cancelled)
