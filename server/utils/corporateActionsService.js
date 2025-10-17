@@ -1,5 +1,5 @@
 const User = require("../models/User");
-const { getAvailableStocks, getMockStockData, mockStockService } = require("../services/StockService");
+const { getAvailableStocks, getMockStockData, mockStockService } = require("../services/stockService");
 const Decimal = require("decimal.js");
 const cron = require("node-cron");
 

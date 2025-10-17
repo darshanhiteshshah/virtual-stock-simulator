@@ -2,7 +2,7 @@
 const User = require("../models/User");
 const PortfolioSnapshot = require("../models/PortfolioSnapshot");
 const Decimal = require("decimal.js");
-const { getMockStockData } = require("../services/StockService"); // Fixed path
+const { getMockStockData } = require("../services/stockService"); // Fixed path
 const cron = require("node-cron");
 
 /**

@@ -3,7 +3,7 @@ const User = require("../models/User");
 const PendingOrder = require("../models/PendingOrder");
 const Transaction = require("../models/Transaction");
 const Decimal = require("decimal.js");
-const { getMockStockData } = require("./StockService"); // Corrected path
+const { getMockStockData } = require("../services/stockService"); // Corrected path
 
 /**
  * Execute a BUY order
@@ -72,7 +72,7 @@ const executeBuyOrder = async (order, user, stockData) => {
         try {
             // Only call if services exist
             if (require.resolve('../utils/achievementService')) {
-                const { checkAndAwardAchievements } = require('../utils/achievementService');
+                const { checkAndAwardAchievements } = require('./achievementService');
                 await checkAndAwardAchievements(user._id);
             }
         } catch (e) {
@@ -154,7 +154,7 @@ const executeSellOrder = async (order, user, stockData) => {
         // Optional: Call additional services if they exist
         try {
             if (require.resolve('../utils/achievementService')) {
-                const { checkAndAwardAchievements } = require('../utils/achievementService');
+                const { checkAndAwardAchievements } = require('./achievementService');
                 await checkAndAwardAchievements(user._id);
             }
         } catch (e) {
