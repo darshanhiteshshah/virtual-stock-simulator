@@ -167,7 +167,21 @@ async function fetchLiveQuote(symbol) {
 }
 
 // Fetch historical data from Yahoo Finance (BSE) - NO FALLBACK
-async function fetchLiveHistory(symbol, days = 30) {
+// Fetch historical data from Yahoo Finance (BSE) - NO FALLBACK
+async function fetchLiveHistory(symbol, period = '1mo') {
+    // Convert period string to days
+    const periodToDays = {
+        '1d': 1,
+        '5d': 5,
+        '1mo': 30,
+        '3mo': 90,
+        '6mo': 180,
+        '1y': 365,
+        '2y': 730,
+        '5y': 1825
+    };
+    
+    const days = periodToDays[period] || 30; // Default to 30 days
     const cacheKey = `history:${symbol}:${days}`;
     
     if (isCacheValid(cacheKey, historyCache)) {
@@ -183,8 +197,8 @@ async function fetchLiveHistory(symbol, days = 30) {
         console.log(`📊 Fetching BSE history for ${yahooSymbol} (${days} days)...`);
 
         const history = await yahooFinance.historical(yahooSymbol, {
-            period1: startDate,
-            period2: endDate,
+            period1: startDate.toISOString().split('T')[0], // Format: YYYY-MM-DD
+            period2: endDate.toISOString().split('T')[0],   // Format: YYYY-MM-DD
             interval: '1d'
         });
 
@@ -210,6 +224,7 @@ async function fetchLiveHistory(symbol, days = 30) {
         throw new Error(`Unable to fetch historical data for ${symbol} from Yahoo Finance BSE. ${error.message}`);
     }
 }
+
 
 // Get single stock data - YAHOO ONLY
 async function getMockStockData(symbol) {
