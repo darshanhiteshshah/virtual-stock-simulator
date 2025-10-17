@@ -3,7 +3,7 @@ const User = require("../models/User");
 const PendingOrder = require("../models/PendingOrder");
 const Transaction = require("../models/Transaction");
 const Decimal = require("decimal.js");
-const { getMockStockData } = require("./stockService"); // Corrected path
+const { getMockStockData } = require("./StockService."); // Corrected path
 
 /**
  * Execute a BUY order
