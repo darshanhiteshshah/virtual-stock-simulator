@@ -10,6 +10,9 @@ const pendingOrderSchema = new mongoose.Schema(
         tradeType: { type: String, enum: ["BUY", "SELL"], required: true },
         status: { type: String, enum: ["PENDING", "EXECUTED", "CANCELLED", "FAILED"], default: "PENDING" },
         executedPrice: { type: Number },
+        executedAt: { type: Date },
+    failureReason: { type: String },
+    executedPrice: { type: Number }
     },
     { timestamps: true }
 );
