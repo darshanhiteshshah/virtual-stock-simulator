@@ -88,11 +88,11 @@ const buyStock = async (req, res) => {
 
         // Create transaction record
         const transaction = await Transaction.create({
-            userId,
+            user:userId,
             symbol,
             quantity,
             price: currentPrice,
-            type: 'buy',
+            type: 'BUY',
             totalAmount: totalCost
         });
 
@@ -203,11 +203,11 @@ const sellStock = async (req, res) => {
 
         // Create transaction record
         const transaction = await Transaction.create({
-            userId,
+           user:userId,
             symbol,
             quantity,
             price: currentPrice,
-            type: 'sell',
+            type: 'SELL',
             totalAmount: totalRevenue
         });
 
