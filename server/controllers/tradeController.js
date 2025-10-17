@@ -380,9 +380,22 @@ const getPendingOrders = async (req, res) => {
     try {
         const userId = req.user._id;
 
-        console.log(`📋 Fetching pending orders for user ${userId}`);
-        console.log(`User ID type: ${typeof userId}, value: ${userId}`); // Debug log
+        console.log(`📋 Fetching pending orders`);
+        console.log(`User ID: ${userId}`);
+        console.log(`User ID type: ${typeof userId}`);
+        
+        // First, check if ANY orders exist for this user
+        const allOrders = await PendingOrder.find({ user: userId });
+        console.log(`Total orders for user (all statuses): ${allOrders.length}`);
+        
+        if (allOrders.length > 0) {
+            console.log(`Sample order user field: ${allOrders[0].user}`);
+            console.log(`Sample order user type: ${typeof allOrders[0].user}`);
+            console.log(`Sample order status: ${allOrders[0].status}`);
+            console.log(`IDs match: ${String(allOrders[0].user) === String(userId)}`);
+        }
 
+        // Now get pending orders
         const orders = await PendingOrder.find({
             user: userId,
             status: 'PENDING'
@@ -390,24 +403,7 @@ const getPendingOrders = async (req, res) => {
             .sort({ createdAt: -1 })
             .lean();
 
-        console.log(`✅ Found ${orders.length} pending orders`);
-        
-        // Debug: Log one order if exists
-        if (orders.length > 0) {
-            console.log('Sample order:', JSON.stringify(orders[0], null, 2));
-        } else {
-            // Check if ANY orders exist for debugging
-            const allUserOrders = await PendingOrder.find({ user: userId });
-            console.log(`Total orders for user (any status): ${allUserOrders.length}`);
-            
-            if (allUserOrders.length > 0) {
-                console.log('Sample order (any status):', {
-                    status: allUserOrders[0].status,
-                    symbol: allUserOrders[0].symbol,
-                    user: allUserOrders[0].user
-                });
-            }
-        }
+        console.log(`✅ Found ${orders.length} PENDING orders`);
 
         res.status(200).json({
             success: true,
@@ -423,6 +419,7 @@ const getPendingOrders = async (req, res) => {
         });
     }
 };
+
 
 
 /**
