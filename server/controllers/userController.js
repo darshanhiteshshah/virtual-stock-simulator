@@ -1,6 +1,6 @@
 const User = require("../models/User");
 const Decimal = require("decimal.js");
-const { getMockStockData } = require("../utils/mockStockService");
+const { getMockStockData } = require("../services/StockService");
 const { generateToken } = require("./authController"); // Import token generator
 const PortfolioSnapshot = require("../models/PortfolioSnapshot");
 

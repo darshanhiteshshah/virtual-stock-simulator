@@ -1,6 +1,6 @@
 const User = require("../models/User");
 const Decimal = require("decimal.js");
-const { getMockStockData } = require("../utils/mockStockService");
+const { getMockStockData } = require("../services/StockService");
 // --- ADD THIS LINE ---
 const { sendTransactionEmail } = require("../utils/emailService");
 const { checkAndAwardAchievements } = require('../utils/achievementService'); // Import the new service
