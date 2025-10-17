@@ -1,22 +1,32 @@
 import axios from "axios";
 
-// Create a reusable Axios instance with a predefined base URL for all API calls.
+// Create a reusable Axios instance
 const apiClient = axios.create({
     baseURL: `${import.meta.env.VITE_API_URL}/api`,
-    headers: { "Content-Type": "application/json" },
+    headers: { 
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache, no-store, must-revalidate", // Force no cache
+        "Pragma": "no-cache",
+        "Expires": "0"
+    },
 });
 
 /**
- * Fetches the live price and details for a specific stock symbol from the backend.
- * @param {string} symbol - The stock ticker symbol.
- * @param {string} token - The user's authentication JWT.
- * @returns {Promise<object>} A promise that resolves to the stock data.
+ * Fetches the live price and details for a specific stock symbol
  */
-
 export const fetchStockPrice = async (symbol, token) => {
     try {
-        const config = { headers: { Authorization: `Bearer ${token}` } };
+        const config = { 
+            headers: { 
+                Authorization: `Bearer ${token}`,
+                "Cache-Control": "no-cache"
+            },
+            params: { _t: Date.now() } // Cache buster
+        };
         const response = await apiClient.get(`/stocks/price/${symbol}`, config);
+        
+        console.log(`📡 Fetched ${symbol}:`, response.data.price, response.data.exchange);
+        
         return response.data;
     } catch (error) {
         console.error(`Failed to fetch stock price for ${symbol}:`, error);
@@ -25,15 +35,27 @@ export const fetchStockPrice = async (symbol, token) => {
 };
 
 /**
- * Fetches the list of all available stocks for the dropdown menu.
- * @param {string} token - The user's authentication JWT.
- * @returns {Promise<Array>} A promise that resolves to the list of stocks.
+ * Fetches the list of all available stocks
  */
 export const fetchAllStocks = async (token) => {
     try {
-        const config = { headers: { Authorization: `Bearer ${token}` } };
-        const response = await apiClient.get("/stocks", config); 
-        // Ensure we return response.data, which is the array of stocks.
+        const config = { 
+            headers: { 
+                Authorization: `Bearer ${token}`,
+                "Cache-Control": "no-cache"
+            },
+            params: { _t: Date.now() } // Cache buster
+        };
+        
+        console.log('📡 Fetching all stocks from:', `${import.meta.env.VITE_API_URL}/api/stocks`);
+        
+        const response = await apiClient.get("/stocks", config);
+        
+        console.log('✅ Received stocks:', response.data?.length);
+        if (response.data?.[0]) {
+            console.log('First stock exchange:', response.data[0].exchange);
+        }
+        
         return response.data;
     } catch (error) {
         console.error("Failed to fetch all stocks:", error);
@@ -42,14 +64,16 @@ export const fetchAllStocks = async (token) => {
 };
 
 /**
- * Fetches live prices for a list of stock symbols, used for the ticker.
- * @param {string[]} symbols - An array of stock ticker symbols.
- * @param {string} token - The user's authentication JWT.
- * @returns {Promise<Array>} A promise that resolves to the list of stocks with prices.
+ * Fetches live prices for multiple stock symbols
  */
 export const fetchMultipleStockPrices = async (symbols, token) => {
     try {
-        const config = { headers: { Authorization: `Bearer ${token}` } };
+        const config = { 
+            headers: { 
+                Authorization: `Bearer ${token}`,
+                "Cache-Control": "no-cache"
+            } 
+        };
         const response = await apiClient.post("/stocks/prices", { symbols }, config);
         return response.data;
     } catch (error) {
@@ -59,14 +83,17 @@ export const fetchMultipleStockPrices = async (symbols, token) => {
 };
 
 /**
- * Fetches 30-day historical price data for a stock.
- * @param {string} symbol - The stock ticker symbol.
- * @param {string} token - The user's authentication JWT.
- * @returns {Promise<Array>} A promise that resolves to the historical data.
+ * Fetches 30-day historical price data
  */
-export const fetchStockHistory = async (symbol, token) => {
+export const fetchStockHistory = async (symbol, token, period = '1mo') => {
     try {
-        const config = { headers: { Authorization: `Bearer ${token}` } };
+        const config = { 
+            headers: { 
+                Authorization: `Bearer ${token}`,
+                "Cache-Control": "no-cache"
+            },
+            params: { period, _t: Date.now() }
+        };
         const response = await apiClient.get(`/stocks/history/${symbol}`, config);
         return response.data;
     } catch (error) {
@@ -75,19 +102,17 @@ export const fetchStockHistory = async (symbol, token) => {
     }
 };
 
-
-// ... (existing functions)
-
-// --- NEW FUNCTION ---
 /**
- * Fetches a list of stocks based on filter criteria.
- * @param {object} filters - The filter criteria (sector, marketCap, etc.).
- * @param {string} token - The user's authentication JWT.
- * @returns {Promise<Array>} A promise that resolves to the filtered list of stocks.
+ * Screen stocks by filters
  */
 export const screenStocks = async (filters, token) => {
     try {
-        const config = { headers: { Authorization: `Bearer ${token}` } };
+        const config = { 
+            headers: { 
+                Authorization: `Bearer ${token}`,
+                "Cache-Control": "no-cache"
+            } 
+        };
         const response = await apiClient.post("/stocks/screener", filters, config);
         return response.data;
     } catch (error) {
@@ -96,18 +121,18 @@ export const screenStocks = async (filters, token) => {
     }
 };
 
-// ... (existing functions)
-
-// --- NEW FUNCTION ---
 /**
- * Fetches the full profile for a single stock.
- * @param {string} symbol - The stock ticker symbol.
- * @param {string} token - The user's authentication JWT.
- * @returns {Promise<object>} A promise that resolves to the stock's full profile data.
+ * Fetch full stock profile
  */
 export const fetchStockProfile = async (symbol, token) => {
     try {
-        const config = { headers: { Authorization: `Bearer ${token}` } };
+        const config = { 
+            headers: { 
+                Authorization: `Bearer ${token}`,
+                "Cache-Control": "no-cache"
+            },
+            params: { _t: Date.now() }
+        };
         const response = await apiClient.get(`/stocks/profile/${symbol}`, config);
         return response.data;
     } catch (error) {
@@ -115,3 +140,5 @@ export const fetchStockProfile = async (symbol, token) => {
         throw error;
     }
 };
+
+export default apiClient;
