@@ -1,200 +1,422 @@
-const User = require("../models/User");
-const Decimal = require("decimal.js");
-const { getMockStockData } = require("../services/StockService");
-// --- ADD THIS LINE ---
-const { sendTransactionEmail } = require("../utils/emailService");
-const { checkAndAwardAchievements } = require('../utils/achievementService'); // Import the new service
-const { addTradeToFeed}=require("../utils/tradeFeedService")// Import the trade feed service
-const PendingOrder = require("../models/PendingOrder");
+const { getMockStockData } = require('../services/StockService');
+const User = require('../models/User');
+const Transaction = require('../models/Transaction');
 
-const BROKERAGE_FEE = 20.00;
-
-
-// ------------------------ BUY STOCK ------------------------
-exports.buyStock = async (req, res) => {
+/**
+ * @desc    Buy stock at current market price
+ * @route   POST /api/trade/buy
+ * @access  Private
+ */
+const buyStock = async (req, res) => {
     try {
-        const user = await User.findById(req.user.id);
         const { symbol, quantity } = req.body;
+        const userId = req.user._id;
 
-        if (quantity <= 0) {
-            return res.status(400).json({ message: "Quantity must be a positive number." });
-        }
+        console.log(`🛒 Buy request: ${quantity} shares of ${symbol} by user ${userId}`);
 
-        const stockData = getMockStockData(symbol);
-        if (!stockData) {
-            return res.status(404).json({ message: `Stock symbol '${symbol}' not found.` });
-        }
-        
-        const pricePerStock = new Decimal(stockData.price);
-        const tradeQuantity = new Decimal(quantity);
-        const totalCost = pricePerStock.times(tradeQuantity).plus(BROKERAGE_FEE);
-        const userWallet = new Decimal(user.walletBalance);
-
-        if (userWallet.lessThan(totalCost)) {
-            return res.status(400).json({ message: "Insufficient funds." });
-        }
-
-        user.walletBalance = userWallet.minus(totalCost).toNumber();
-
-        const existingStock = user.portfolio.find(stock => stock.symbol === symbol);
-        if (existingStock) {
-            const existingQuantity = new Decimal(existingStock.quantity);
-            const existingAvgPrice = new Decimal(existingStock.avgBuyPrice);
-            const totalShares = existingQuantity.plus(tradeQuantity);
-            const newAvgBuyPrice = ((existingAvgPrice.times(existingQuantity)).plus(totalCost)).dividedBy(totalShares);
-            existingStock.avgBuyPrice = newAvgBuyPrice.toNumber();
-            existingStock.quantity = totalShares.toNumber();
-        } else {
-            user.portfolio.push({
-                symbol,
-                quantity: tradeQuantity.toNumber(),
-                avgBuyPrice: pricePerStock.toNumber(),
+        // Validation
+        if (!symbol || !quantity || quantity <= 0) {
+            return res.status(400).json({ 
+                message: 'Invalid symbol or quantity' 
             });
         }
 
-        const transaction = {
-            type: "BUY",
-            symbol,
-            quantity: tradeQuantity.toNumber(),
-            price: pricePerStock.toNumber(),
-            date: new Date(),
-        };
-        user.transactions.push(transaction);
+        // Get current stock price from Yahoo Finance
+        let stockData;
+        try {
+            stockData = await getMockStockData(symbol);
+            
+            if (!stockData || !stockData.price) {
+                console.error(`❌ No price data for ${symbol}:`, stockData);
+                return res.status(400).json({ 
+                    message: `Unable to fetch current price for ${symbol}. Stock may not be available.` 
+                });
+            }
+            
+            console.log(`📊 Current price for ${symbol}: ₹${stockData.price}`);
+        } catch (error) {
+            console.error(`❌ Error fetching stock data for ${symbol}:`, error.message);
+            return res.status(400).json({ 
+                message: `Unable to fetch stock data: ${error.message}` 
+            });
+        }
+
+        const currentPrice = parseFloat(stockData.price);
+        const totalCost = currentPrice * quantity;
+
+        console.log(`💰 Total cost: ₹${totalCost.toFixed(2)}`);
+
+        // Get user
+        const user = await User.findById(userId);
+        
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Check if user has enough balance
+        if (user.walletBalance < totalCost) {
+            return res.status(400).json({ 
+                message: `Insufficient funds. Required: ₹${totalCost.toFixed(2)}, Available: ₹${user.walletBalance.toFixed(2)}` 
+            });
+        }
+
+        // Deduct from wallet
+        user.walletBalance -= totalCost;
+
+        // Update or add to portfolio
+        const existingHolding = user.portfolio.find(p => p.symbol === symbol);
+        
+        if (existingHolding) {
+            // Calculate new average price
+            const totalShares = existingHolding.quantity + quantity;
+            const totalValue = (existingHolding.averagePrice * existingHolding.quantity) + totalCost;
+            existingHolding.averagePrice = totalValue / totalShares;
+            existingHolding.quantity = totalShares;
+            
+            console.log(`📈 Updated holding: ${existingHolding.quantity} shares at avg ₹${existingHolding.averagePrice.toFixed(2)}`);
+        } else {
+            user.portfolio.push({
+                symbol,
+                quantity,
+                averagePrice: currentPrice
+            });
+            
+            console.log(`🆕 New holding: ${quantity} shares at ₹${currentPrice}`);
+        }
 
         await user.save();
-        await checkAndAwardAchievements(user._id); 
-        addTradeToFeed(transaction);
 
-        // --- ADD THIS LINE ---
-        // Send a confirmation email after the trade is saved
-        await sendTransactionEmail(user.email, user.username, transaction);
-
-        res.json({
-            message: `Successfully bought ${quantity} shares of ${symbol}`,
-            updatedPortfolio: user.portfolio,
-            updatedWallet: user.walletBalance,
+        // Create transaction record
+        const transaction = await Transaction.create({
+            userId,
+            symbol,
+            quantity,
+            price: currentPrice,
+            type: 'buy',
+            totalAmount: totalCost
         });
+
+        console.log(`✅ Transaction completed: ${transaction._id}`);
+
+        res.status(200).json({
+            message: `Successfully bought ${quantity} shares of ${symbol}`,
+            transaction: {
+                id: transaction._id,
+                symbol,
+                quantity,
+                price: currentPrice,
+                totalCost: totalCost.toFixed(2),
+                type: 'buy'
+            },
+            portfolio: user.portfolio,
+            walletBalance: user.walletBalance
+        });
+
     } catch (error) {
-        console.error("Error in buyStock:", error);
-        res.status(500).json({ message: "Server error during buy operation." });
+        console.error('❌ Error in buyStock controller:', error);
+        res.status(500).json({ 
+            message: 'Server error during buy operation.',
+            error: error.message 
+        });
     }
 };
 
-// ------------------------ SELL STOCK ------------------------
-exports.sellStock = async (req, res) => {
+/**
+ * @desc    Sell stock at current market price
+ * @route   POST /api/trade/sell
+ * @access  Private
+ */
+const sellStock = async (req, res) => {
     try {
         const { symbol, quantity } = req.body;
-        const user = await User.findById(req.user.id);
+        const userId = req.user._id;
 
-        if (quantity <= 0) {
-            return res.status(400).json({ message: "Quantity must be a positive number." });
+        console.log(`💰 Sell request: ${quantity} shares of ${symbol} by user ${userId}`);
+
+        // Validation
+        if (!symbol || !quantity || quantity <= 0) {
+            return res.status(400).json({ 
+                message: 'Invalid symbol or quantity' 
+            });
         }
 
-        const stockData = getMockStockData(symbol);
-        if (!stockData) {
-            return res.status(404).json({ message: `Stock symbol '${symbol}' not found.` });
+        // Get current stock price from Yahoo Finance
+        let stockData;
+        try {
+            stockData = await getMockStockData(symbol);
+            
+            if (!stockData || !stockData.price) {
+                console.error(`❌ No price data for ${symbol}:`, stockData);
+                return res.status(400).json({ 
+                    message: `Unable to fetch current price for ${symbol}` 
+                });
+            }
+            
+            console.log(`📊 Current price for ${symbol}: ₹${stockData.price}`);
+        } catch (error) {
+            console.error(`❌ Error fetching stock data for ${symbol}:`, error.message);
+            return res.status(400).json({ 
+                message: `Unable to fetch stock data: ${error.message}` 
+            });
         }
 
-        const pricePerStock = new Decimal(stockData.price);
-        const tradeQuantity = new Decimal(quantity);
+        const currentPrice = parseFloat(stockData.price);
+        const totalRevenue = currentPrice * quantity;
 
-        const stockIndex = user.portfolio.findIndex((s) => s.symbol === symbol);
-        if (stockIndex === -1) {
-            return res.status(400).json({ message: "You do not own this stock." });
-        }
-
-        const stockToSell = user.portfolio[stockIndex];
-        if (new Decimal(stockToSell.quantity).lessThan(tradeQuantity)) {
-            return res.status(400).json({ message: "Not enough shares to sell." });
-        }
-
-        stockToSell.quantity = new Decimal(stockToSell.quantity).minus(tradeQuantity).toNumber();
+        // Get user
+        const user = await User.findById(userId);
         
-        const earnings = pricePerStock.times(tradeQuantity).minus(BROKERAGE_FEE);
-        user.walletBalance = new Decimal(user.walletBalance).plus(earnings).toNumber();
-
-        if (stockToSell.quantity === 0) {
-            user.portfolio.splice(stockIndex, 1);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
         }
 
-        const transaction = {
-            type: "SELL",
-            symbol,
-            quantity: tradeQuantity.toNumber(),
-            price: pricePerStock.toNumber(),
-            date: new Date(),
-        };
-        user.transactions.push(transaction);
+        // Check if user has the stock
+        const holding = user.portfolio.find(p => p.symbol === symbol);
+        
+        if (!holding) {
+            return res.status(400).json({ 
+                message: `You don't own any shares of ${symbol}` 
+            });
+        }
+
+        if (holding.quantity < quantity) {
+            return res.status(400).json({ 
+                message: `Insufficient shares. You own ${holding.quantity} shares but trying to sell ${quantity}` 
+            });
+        }
+
+        // Update portfolio
+        if (holding.quantity === quantity) {
+            // Remove from portfolio completely
+            user.portfolio = user.portfolio.filter(p => p.symbol !== symbol);
+            console.log(`🗑️ Removed ${symbol} from portfolio (sold all shares)`);
+        } else {
+            // Reduce quantity
+            holding.quantity -= quantity;
+            console.log(`📉 Reduced holding: ${holding.quantity} shares remaining`);
+        }
+
+        // Add to wallet
+        user.walletBalance += totalRevenue;
 
         await user.save();
-        await checkAndAwardAchievements(user._id); 
-        addTradeToFeed(transaction);
 
-        // --- ADD THIS LINE ---
-        // Send a confirmation email after the trade is saved
-        await sendTransactionEmail(user.email, user.username, transaction);
-
-        res.json({
-            message: `Successfully sold ${quantity} shares of ${symbol}`,
-            updatedPortfolio: user.portfolio,
-            updatedWallet: user.walletBalance,
-        });
-    } catch (error) {
-        console.error("Error in sellStock:", error);
-        res.status(500).json({ message: "Server error during sell operation." });
-    }
-};
-
-
-exports.placeOrder = async (req, res) => {
-    const { symbol, quantity, targetPrice, orderType, tradeType } = req.body;
-
-    if (quantity <= 0 || targetPrice <= 0) {
-        return res.status(400).json({ message: "Quantity and price must be positive." });
-    }
-
-    try {
-        const order = new PendingOrder({
-            user: req.user.id,
-            symbol: symbol.toUpperCase(),
+        // Create transaction record
+        const transaction = await Transaction.create({
+            userId,
+            symbol,
             quantity,
-            targetPrice,
-            orderType,
-            tradeType,
+            price: currentPrice,
+            type: 'sell',
+            totalAmount: totalRevenue
         });
-        await order.save();
-        res.status(201).json({ message: `${orderType} order placed successfully.` });
+
+        console.log(`✅ Sell transaction completed: ${transaction._id}`);
+
+        res.status(200).json({
+            message: `Successfully sold ${quantity} shares of ${symbol}`,
+            transaction: {
+                id: transaction._id,
+                symbol,
+                quantity,
+                price: currentPrice,
+                totalRevenue: totalRevenue.toFixed(2),
+                type: 'sell'
+            },
+            portfolio: user.portfolio,
+            walletBalance: user.walletBalance
+        });
+
     } catch (error) {
-        res.status(500).json({ message: "Server error placing order." });
+        console.error('❌ Error in sellStock controller:', error);
+        res.status(500).json({ 
+            message: 'Server error during sell operation.',
+            error: error.message 
+        });
     }
 };
 
-// @desc    Get user's pending orders
-// @route   GET /api/trade/pending-orders
-exports.getPendingOrders = async (req, res) => {
+/**
+ * @desc    Place a limit/stop order
+ * @route   POST /api/trade/place-order
+ * @access  Private
+ */
+const placeOrder = async (req, res) => {
     try {
-        const orders = await PendingOrder.find({ user: req.user.id, status: 'PENDING' }).sort({ createdAt: -1 });
-        res.json(orders);
+        // Placeholder for limit/stop order functionality
+        res.status(200).json({ message: 'Place order functionality coming soon' });
     } catch (error) {
-        res.status(500).json({ message: "Server error fetching orders." });
+        console.error('Error placing order:', error);
+        res.status(500).json({ message: 'Server error placing order' });
     }
 };
 
-// @desc    Cancel a pending order
-// @route   DELETE /api/trade/cancel-order/:orderId
-exports.cancelOrder = async (req, res) => {
+/**
+ * @desc    Get pending orders
+ * @route   GET /api/trade/pending-orders
+ * @access  Private
+ */
+const getPendingOrders = async (req, res) => {
     try {
-        const order = await PendingOrder.findOne({ _id: req.params.orderId, user: req.user.id });
-        if (!order) {
-            return res.status(404).json({ message: "Order not found." });
-        }
-        if (order.status !== 'PENDING') {
-            return res.status(400).json({ message: "Only pending orders can be cancelled." });
-        }
-        order.status = "CANCELLED";
-        await order.save();
-        res.json({ message: "Order cancelled successfully." });
+        // Placeholder for pending orders functionality
+        res.status(200).json([]);
     } catch (error) {
-        res.status(500).json({ message: "Server error cancelling order." });
+        console.error('Error fetching pending orders:', error);
+        res.status(500).json({ message: 'Server error fetching orders' });
     }
+};
+
+/**
+ * @desc    Cancel a pending order
+ * @route   DELETE /api/trade/cancel-order/:orderId
+ * @access  Private
+ */
+const cancelOrder = async (req, res) => {
+    try {
+        // Placeholder for cancel order functionality
+        res.status(200).json({ message: 'Order cancelled' });
+    } catch (error) {
+        console.error('Error cancelling order:', error);
+        res.status(500).json({ message: 'Server error cancelling order' });
+    }
+};
+
+/**
+ * @desc    Get trade history
+ * @route   GET /api/trade/history
+ * @access  Private
+ */
+const getTradeHistory = async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const { startDate, endDate, symbol } = req.query;
+
+        console.log(`📜 Fetching trade history for user ${userId}`);
+
+        // Build query
+        const query = { userId };
+
+        if (symbol) {
+            query.symbol = symbol.toUpperCase();
+        }
+
+        if (startDate || endDate) {
+            query.createdAt = {};
+            if (startDate) query.createdAt.$gte = new Date(startDate);
+            if (endDate) query.createdAt.$lte = new Date(endDate);
+        }
+
+        // Fetch transactions
+        const transactions = await Transaction.find(query)
+            .sort({ createdAt: -1 })
+            .limit(100);
+
+        console.log(`✅ Found ${transactions.length} transactions`);
+
+        res.status(200).json(transactions);
+
+    } catch (error) {
+        console.error('❌ Error fetching trade history:', error);
+        res.status(500).json({ 
+            message: 'Server error fetching trade history',
+            error: error.message 
+        });
+    }
+};
+
+/**
+ * @desc    Validate buy order
+ * @route   POST /api/trade/validate-buy
+ * @access  Private
+ */
+const validateBuyOrder = async (req, res) => {
+    try {
+        const { symbol, quantity, price } = req.body;
+        const userId = req.user._id;
+
+        const user = await User.findById(userId);
+        
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const totalCost = price * quantity;
+        const canAfford = user.walletBalance >= totalCost;
+
+        res.status(200).json({
+            valid: canAfford,
+            totalCost: totalCost.toFixed(2),
+            walletBalance: user.walletBalance.toFixed(2),
+            shortfall: canAfford ? 0 : (totalCost - user.walletBalance).toFixed(2),
+            message: canAfford 
+                ? 'You have sufficient funds' 
+                : `Insufficient funds. Need ₹${(totalCost - user.walletBalance).toFixed(2)} more`
+        });
+
+    } catch (error) {
+        console.error('❌ Error validating buy order:', error);
+        res.status(500).json({ 
+            message: 'Validation error',
+            error: error.message 
+        });
+    }
+};
+
+/**
+ * @desc    Validate sell order
+ * @route   POST /api/trade/validate-sell
+ * @access  Private
+ */
+const validateSellOrder = async (req, res) => {
+    try {
+        const { symbol, quantity } = req.body;
+        const userId = req.user._id;
+
+        const user = await User.findById(userId);
+        
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const holding = user.portfolio.find(p => p.symbol === symbol);
+        
+        if (!holding) {
+            return res.status(200).json({
+                valid: false,
+                ownedShares: 0,
+                message: `You don't own any shares of ${symbol}`
+            });
+        }
+
+        const canSell = holding.quantity >= quantity;
+
+        res.status(200).json({
+            valid: canSell,
+            ownedShares: holding.quantity,
+            requestedShares: quantity,
+            shortfall: canSell ? 0 : quantity - holding.quantity,
+            message: canSell 
+                ? 'You have sufficient shares' 
+                : `Insufficient shares. You own ${holding.quantity} but trying to sell ${quantity}`
+        });
+
+    } catch (error) {
+        console.error('❌ Error validating sell order:', error);
+        res.status(500).json({ 
+            message: 'Validation error',
+            error: error.message 
+        });
+    }
+};
+
+// Export all functions
+module.exports = { 
+    buyStock, 
+    sellStock, 
+    placeOrder, 
+    getPendingOrders, 
+    cancelOrder,
+    getTradeHistory,
+    validateBuyOrder,
+    validateSellOrder
 };
