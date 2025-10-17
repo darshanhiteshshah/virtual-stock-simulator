@@ -27,7 +27,7 @@ const { errorHandler, notFound } = require("./middleware/errorHandler");
 
 // Background Services
 const { startAlertChecker } = require("./utils/alertChecker");
-const { startOrderExecutor } = require("./utils/orderExecutor"); 
+const { startOrderExecutor } = require("./services/orderExecutor"); 
 const { startSnapshotService } = require("./utils/snapshotService");
 const { startCorporateActionsService } = require("./utils/corporateActionsService");
 

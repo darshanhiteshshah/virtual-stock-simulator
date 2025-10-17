@@ -1,11 +1,9 @@
-// server/utils/orderExecutor.js
+// server/services/orderExecutionService.js
 const User = require("../models/User");
 const PendingOrder = require("../models/PendingOrder");
+const Transaction = require("../models/Transaction");
 const Decimal = require("decimal.js");
-const { getMockStockData } = require("../services/StockService"); // Fixed path
-const { checkAndAwardAchievements } = require('./achievementService');
-const { addTradeToFeed } = require('./tradeFeedService');
-const { sendTransactionEmail } = require("./emailService");
+const { getMockStockData } = require("./stockService"); // Corrected path
 
 /**
  * Execute a BUY order
@@ -50,17 +48,17 @@ const executeBuyOrder = async (order, user, stockData) => {
             });
         }
 
-        // Record transaction
-        const transaction = {
-            type: "BUY",
+        await user.save();
+
+        // Create transaction record
+        await Transaction.create({
+            user: user._id,
             symbol: order.symbol,
             quantity: order.quantity,
             price: pricePerStock.toNumber(),
-            date: new Date()
-        };
-        user.transactions.push(transaction);
-
-        await user.save();
+            type: 'BUY',
+            totalAmount: pricePerStock.times(tradeQuantity).toNumber()
+        });
 
         // Update order status
         order.status = "EXECUTED";
@@ -68,12 +66,19 @@ const executeBuyOrder = async (order, user, stockData) => {
         order.executedAt = new Date();
         await order.save();
 
-        // Post-execution tasks
-        await addTradeToFeed(transaction);
-        await checkAndAwardAchievements(user._id);
-        await sendTransactionEmail(user.email, user.username, transaction);
-
         console.log(`✅ Executed BUY order #${order._id}: ${order.quantity} ${order.symbol} @ ₹${pricePerStock} for ${user.username}`);
+        
+        // Optional: Call additional services if they exist
+        try {
+            // Only call if services exist
+            if (require.resolve('../utils/achievementService')) {
+                const { checkAndAwardAchievements } = require('../utils/achievementService');
+                await checkAndAwardAchievements(user._id);
+            }
+        } catch (e) {
+            // Service doesn't exist, skip
+        }
+
     } catch (error) {
         console.error(`❌ Error executing BUY order #${order._id}:`, error.message);
         order.status = "FAILED";
@@ -113,28 +118,30 @@ const executeSellOrder = async (order, user, stockData) => {
         }
 
         // Update portfolio
-        user.portfolio[stockIndex].quantity = availableQuantity.minus(tradeQuantity).toNumber();
+        const newQuantity = availableQuantity.minus(tradeQuantity);
+        user.portfolio[stockIndex].quantity = newQuantity.toNumber();
         
-        // Calculate earnings
-        const earnings = pricePerStock.times(tradeQuantity).minus(brokerageFee);
-        user.walletBalance = new Decimal(user.walletBalance).plus(earnings).toNumber();
+        // Calculate earnings (subtract brokerage)
+        const grossEarnings = pricePerStock.times(tradeQuantity);
+        const netEarnings = grossEarnings.minus(brokerageFee);
+        user.walletBalance = new Decimal(user.walletBalance).plus(netEarnings).toNumber();
 
         // Remove stock from portfolio if quantity is 0
         if (user.portfolio[stockIndex].quantity === 0) {
             user.portfolio.splice(stockIndex, 1);
         }
 
-        // Record transaction
-        const transaction = {
-            type: "SELL",
+        await user.save();
+
+        // Create transaction record
+        await Transaction.create({
+            user: user._id,
             symbol: order.symbol,
             quantity: order.quantity,
             price: pricePerStock.toNumber(),
-            date: new Date()
-        };
-        user.transactions.push(transaction);
-
-        await user.save();
+            type: 'SELL',
+            totalAmount: grossEarnings.toNumber()
+        });
 
         // Update order status
         order.status = "EXECUTED";
@@ -142,12 +149,18 @@ const executeSellOrder = async (order, user, stockData) => {
         order.executedAt = new Date();
         await order.save();
 
-        // Post-execution tasks
-        await addTradeToFeed(transaction);
-        await checkAndAwardAchievements(user._id);
-        await sendTransactionEmail(user.email, user.username, transaction);
-
         console.log(`✅ Executed SELL order #${order._id}: ${order.quantity} ${order.symbol} @ ₹${pricePerStock} for ${user.username}`);
+        
+        // Optional: Call additional services if they exist
+        try {
+            if (require.resolve('../utils/achievementService')) {
+                const { checkAndAwardAchievements } = require('../utils/achievementService');
+                await checkAndAwardAchievements(user._id);
+            }
+        } catch (e) {
+            // Service doesn't exist, skip
+        }
+
     } catch (error) {
         console.error(`❌ Error executing SELL order #${order._id}:`, error.message);
         order.status = "FAILED";
@@ -161,7 +174,14 @@ const executeSellOrder = async (order, user, stockData) => {
  */
 const checkPendingOrders = async () => {
     try {
-        const pendingOrders = await PendingOrder.find({ status: "PENDING" }).populate('user');
+        const pendingOrders = await PendingOrder.find({ 
+            status: "PENDING",
+            // Optional: Add expiry check
+            $or: [
+                { expiresAt: { $exists: false } },
+                { expiresAt: { $gte: new Date() } }
+            ]
+        }).populate('user');
 
         if (pendingOrders.length === 0) {
             return; // No pending orders
@@ -180,10 +200,10 @@ const checkPendingOrders = async () => {
                     continue;
                 }
 
-                // Fetch current stock price from Yahoo Finance (async)
+                // Fetch current stock price from Yahoo Finance
                 const stockData = await getMockStockData(order.symbol);
                 
-                if (!stockData) {
+                if (!stockData || !stockData.price) {
                     console.warn(`⚠️ No data for ${order.symbol}, skipping order #${order._id}`);
                     continue;
                 }
@@ -196,30 +216,33 @@ const checkPendingOrders = async () => {
                 }
 
                 let conditionMet = false;
+                let triggerReason = '';
 
                 // Check order conditions
                 if (order.tradeType === 'BUY') {
-                    if (order.orderType === 'LIMIT' && currentPrice <= order.targetPrice) {
+                    if (order.orderType === 'LIMIT' && order.targetPrice && currentPrice <= order.targetPrice) {
                         conditionMet = true;
-                        console.log(`📉 BUY LIMIT triggered: ${order.symbol} @ ₹${currentPrice} <= ₹${order.targetPrice}`);
+                        triggerReason = `BUY LIMIT triggered: ${order.symbol} @ ₹${currentPrice} <= ₹${order.targetPrice}`;
                     }
-                    if (order.orderType === 'STOP_LOSS' && currentPrice >= order.targetPrice) {
+                    if (order.orderType === 'STOP_LOSS' && order.stopPrice && currentPrice >= order.stopPrice) {
                         conditionMet = true;
-                        console.log(`📈 BUY STOP-LOSS triggered: ${order.symbol} @ ₹${currentPrice} >= ₹${order.targetPrice}`);
+                        triggerReason = `BUY STOP-LOSS triggered: ${order.symbol} @ ₹${currentPrice} >= ₹${order.stopPrice}`;
                     }
                 } else if (order.tradeType === 'SELL') {
-                    if (order.orderType === 'LIMIT' && currentPrice >= order.targetPrice) {
+                    if (order.orderType === 'LIMIT' && order.targetPrice && currentPrice >= order.targetPrice) {
                         conditionMet = true;
-                        console.log(`📈 SELL LIMIT triggered: ${order.symbol} @ ₹${currentPrice} >= ₹${order.targetPrice}`);
+                        triggerReason = `SELL LIMIT triggered: ${order.symbol} @ ₹${currentPrice} >= ₹${order.targetPrice}`;
                     }
-                    if (order.orderType === 'STOP_LOSS' && currentPrice <= order.targetPrice) {
+                    if (order.orderType === 'STOP_LOSS' && order.stopPrice && currentPrice <= order.stopPrice) {
                         conditionMet = true;
-                        console.log(`📉 SELL STOP-LOSS triggered: ${order.symbol} @ ₹${currentPrice} <= ₹${order.targetPrice}`);
+                        triggerReason = `SELL STOP-LOSS triggered: ${order.symbol} @ ₹${currentPrice} <= ₹${order.stopPrice}`;
                     }
                 }
 
                 // Execute if condition met
                 if (conditionMet) {
+                    console.log(`📈 ${triggerReason}`);
+                    
                     if (order.tradeType === 'BUY') {
                         await executeBuyOrder(order, order.user, stockData);
                     } else {
@@ -231,6 +254,21 @@ const checkPendingOrders = async () => {
                 continue;
             }
         }
+
+        // Handle expired orders
+        await PendingOrder.updateMany(
+            {
+                status: "PENDING",
+                expiresAt: { $exists: true, $lt: new Date() }
+            },
+            {
+                $set: { 
+                    status: "EXPIRED",
+                    failureReason: "Order expired"
+                }
+            }
+        );
+
     } catch (error) {
         console.error("❌ Error in checkPendingOrders:", error.message);
     }
@@ -243,11 +281,12 @@ const checkPendingOrders = async () => {
 const startOrderExecutor = (interval = 30000) => {
     console.log(`📈 Order Execution Engine started. Checking every ${interval / 1000} seconds.`);
     
-    // Run immediately on startup
-    checkPendingOrders();
-    
-    // Then run on interval
-    setInterval(checkPendingOrders, interval);
+    // Run after 5 seconds to allow server to fully start
+    setTimeout(() => {
+        checkPendingOrders();
+        // Then run on interval
+        setInterval(checkPendingOrders, interval);
+    }, 5000);
 };
 
 module.exports = { 
