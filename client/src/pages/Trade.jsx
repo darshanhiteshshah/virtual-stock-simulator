@@ -4,11 +4,13 @@ import { usePortfolio } from "../context/PortfolioContext";
 import { useStockPrices } from "../context/StockPriceContext";
 import { buyStock, sellStock, placeOrder, getPendingOrders, cancelOrder } from "../services/tradeService";
 import { fetchStockHistory } from "../services/stockService";
+import { addToWatchlist, getWatchlist } from "../services/watchlistService";
 import { formatCurrency } from "../utils/currencyFormatter";
 import StockCard from "../components/StockCard";
 import StockChart from "../components/StockChart";
 import CandlestickChart from "../components/CandlestickChart";
 import StockDetails from "../components/StockDetails";
+import { Star } from "lucide-react";
 
 const Trade = () => {
     const { user, loading: authLoading } = useAuth();
@@ -26,9 +28,11 @@ const Trade = () => {
     const [orderType, setOrderType] = useState('MARKET');
     const [targetPrice, setTargetPrice] = useState('');
     const [pendingOrders, setPendingOrders] = useState([]);
+    const [watchlist, setWatchlist] = useState([]);
 
     const stockData = useMemo(() => stockPrices.find(s => s.symbol === symbol), [symbol, stockPrices]);
     const currentHolding = useMemo(() => portfolio.find(s => s.symbol.toLowerCase() === (symbol || "").toLowerCase()), [portfolio, symbol]);
+    const isInWatchlist = useMemo(() => watchlist.includes(symbol), [watchlist, symbol]);
 
     const fetchPendingOrders = useCallback(async () => {
         if (token && !authLoading) {
@@ -41,15 +45,27 @@ const Trade = () => {
         }
     }, [token, authLoading]);
 
+    const fetchWatchlist = useCallback(async () => {
+        if (token && !authLoading) {
+            try {
+                const data = await getWatchlist(token);
+                setWatchlist(data.watchlist || []);
+            } catch (error) {
+                console.error("Failed to fetch watchlist", error);
+            }
+        }
+    }, [token, authLoading]);
+
     useEffect(() => {
         if (symbol) sessionStorage.setItem('selectedStockSymbol', symbol);
     }, [symbol]);
 
     useEffect(() => {
         fetchPendingOrders();
+        fetchWatchlist();
         const interval = setInterval(fetchPendingOrders, 10000);
         return () => clearInterval(interval);
-    }, [fetchPendingOrders]);
+    }, [fetchPendingOrders, fetchWatchlist]);
 
     useEffect(() => {
         if (!symbol && stockPrices.length > 0) {
@@ -73,6 +89,21 @@ const Trade = () => {
         };
         fetchHistory(symbol);
     }, [symbol, token, authLoading]);
+
+    const handleAddToWatchlist = async () => {
+        if (!symbol || !token) return;
+
+        try {
+            await addToWatchlist(symbol, token);
+            setTradeMessage({ type: 'success', text: `${symbol} added to watchlist!` });
+            setTimeout(() => setTradeMessage({ type: '', text: '' }), 3000);
+            fetchWatchlist();
+        } catch (error) {
+            const message = error.response?.data?.message || 'Failed to add to watchlist';
+            setTradeMessage({ type: 'error', text: message });
+            setTimeout(() => setTradeMessage({ type: '', text: '' }), 3000);
+        }
+    };
 
     const handleTrade = async (tradeType) => {
         if (!token || !stockData || !stockData.price || parseFloat(stockData.price) <= 0) {
@@ -176,22 +207,39 @@ const Trade = () => {
                     </div>
                     <div className="bg-slate-900 border border-slate-800 rounded p-4">
                         <label className="text-sm text-slate-400 block mb-2">Select Stock</label>
-                        <select
-                            value={symbol}
-                            onChange={(e) => setSymbol(e.target.value)}
-                            className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
-                            disabled={pricesLoading}
-                        >
-                            {pricesLoading ? (
-                                <option>Loading...</option>
-                            ) : (
-                                stockPrices.map(stock => (
-                                    <option key={stock.symbol} value={stock.symbol}>
-                                        {stock.name} ({stock.symbol})
-                                    </option>
-                                ))
-                            )}
-                        </select>
+                        <div className="flex gap-2">
+                            <select
+                                value={symbol}
+                                onChange={(e) => setSymbol(e.target.value)}
+                                className="flex-1 bg-slate-800 border border-slate-700 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                                disabled={pricesLoading}
+                            >
+                                {pricesLoading ? (
+                                    <option>Loading...</option>
+                                ) : (
+                                    stockPrices.map(stock => (
+                                        <option key={stock.symbol} value={stock.symbol}>
+                                            {stock.name} ({stock.symbol})
+                                        </option>
+                                    ))
+                                )}
+                            </select>
+                            
+                            {/* Add to Watchlist Button */}
+                            <button
+                                onClick={handleAddToWatchlist}
+                                disabled={isInWatchlist}
+                                className={`px-3 py-2 rounded transition-colors flex items-center gap-2 ${
+                                    isInWatchlist
+                                        ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                                        : 'bg-blue-600 hover:bg-blue-500 text-white'
+                                }`}
+                                title={isInWatchlist ? 'Already in watchlist' : 'Add to watchlist'}
+                            >
+                                <Star className={`w-4 h-4 ${isInWatchlist ? 'fill-yellow-400 text-yellow-400' : ''}`} />
+                                <span className="hidden sm:inline">{isInWatchlist ? 'Added' : 'Watch'}</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
 

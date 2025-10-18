@@ -128,7 +128,7 @@ const PortfolioTable = ({ stocks, isLoading }) => {
                                             <p className="text-sm">Start trading to build your portfolio</p>
                                         </div>
                                         <Link
-                                            to="/market"
+                                            to="/trade"
                                             className="mt-2 px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-lg transition-all duration-200"
                                         >
                                             Explore Market
