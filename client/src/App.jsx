@@ -17,6 +17,8 @@ import Alerts from "./pages/Alerts";
 import Achievements from "./pages/Achievements"; 
 import Screener from "./pages/Screener";
 import StockProfilePage from "./pages/StockProfilePage";
+import AlgoTrading from './pages/AlgoTrading';
+import AlgoBuilder from './pages/AlgoBuilder';
 
 // This is a simple wrapper component that adds a fade-in animation to any page.
 const PageWrapper = ({ children }) => (
@@ -79,6 +81,20 @@ function App() {
                 <Route 
                     path="/achievements" 
                     element={<ProtectedRoute><Layout><PageWrapper><Achievements /></PageWrapper></Layout></ProtectedRoute>} 
+                />
+                
+                {/* Algo Trading Routes - WITH Layout and PageWrapper */}
+                <Route 
+                    path="/algo" 
+                    element={<ProtectedRoute><Layout><PageWrapper><AlgoTrading /></PageWrapper></Layout></ProtectedRoute>} 
+                />
+                <Route 
+                    path="/algo/create" 
+                    element={<ProtectedRoute><Layout><PageWrapper><AlgoBuilder /></PageWrapper></Layout></ProtectedRoute>} 
+                />
+                <Route 
+                    path="/algo/:id" 
+                    element={<ProtectedRoute><Layout><PageWrapper><AlgoBuilder /></PageWrapper></Layout></ProtectedRoute>} 
                 />
             </Routes>
         </Router>

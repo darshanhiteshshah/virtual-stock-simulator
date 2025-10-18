@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
-from predictor import StockPredictor
+from predictor import AdvancedStockPredictor
 import logging
 
 app = Flask(__name__)
@@ -10,7 +10,7 @@ CORS(app)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-predictor = StockPredictor()
+predictor = AdvancedStockPredictor()
 
 @app.route('/health', methods=['GET'])
 def health_check():

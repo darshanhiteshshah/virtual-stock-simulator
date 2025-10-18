@@ -8,7 +8,8 @@ import {
     Bell, 
     Award, 
     Filter, 
-    Gauge
+    Gauge,
+    Zap  // ← Add this
 } from "lucide-react";
 
 const Sidebar = () => {
@@ -94,6 +95,15 @@ const Sidebar = () => {
                 >
                     <Award size={20} />
                     <span>Achievements</span>
+                </NavLink>
+
+                {/* Algo Trading Link - FIXED */}
+                <NavLink 
+                    to="/algo" 
+                    className={({ isActive }) => `${linkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses}`}
+                >
+                    <Zap size={20} />
+                    <span>Algo Trading</span>
                 </NavLink>
             </nav>
 

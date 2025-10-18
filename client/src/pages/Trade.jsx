@@ -245,8 +245,7 @@ const Trade = () => {
                                 )}
                             </div>
 
-                            {/* ML Prediction - NEW! */}
-                            <MLPrediction symbol={symbol} token={token} />
+                            
 
                             {/* Order Type */}
                             <div className="bg-slate-900 border border-slate-800 rounded p-4">
