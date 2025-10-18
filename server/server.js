@@ -44,6 +44,7 @@ const sentimentRoutes = require("./routes/sentimentRoutes");
 const alertRoutes = require("./routes/alertRoutes");
 const achievementRoutes = require("./routes/achievementRoutes");
 const feedRoutes = require("./routes/feedRoutes");
+const algoRoutes = require('./routes/algoRoutes');
 
 console.log('✅ All modules loaded successfully\n');
 
@@ -78,6 +79,8 @@ app.use("/api/sentiment", sentimentRoutes);
 app.use("/api/alerts", alertRoutes);
 app.use("/api/achievements", achievementRoutes);
 app.use("/api/feed", feedRoutes);
+app.use('/api/algo', algoRoutes);
+
 
 console.log('✅ Routes registered\n');
 
