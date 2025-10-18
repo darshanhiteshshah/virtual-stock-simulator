@@ -2,6 +2,8 @@ const { getMockStockData } = require('../services/stockService');
 const User = require('../models/User');
 const Transaction = require('../models/Transaction');
 const PendingOrder = require('../models/PendingOrder');
+const { sendTransactionEmail } = require('../utils/emailService');
+
 
 /**
  * @desc    Buy stock at current market price
@@ -96,6 +98,15 @@ const buyStock = async (req, res) => {
             type: 'BUY',
             totalAmount: totalCost
         });
+
+        sendTransactionEmail(user.email, user.username, {
+    type: 'BUY',
+    symbol,
+    quantity,
+    price: currentPrice,
+    date: transaction.createdAt
+}).catch(err => console.error('📧 Email send failed:', err));
+
 
         console.log(`✅ Transaction completed: ${transaction._id}`);
 
@@ -216,6 +227,15 @@ const sellStock = async (req, res) => {
             type: 'SELL',
             totalAmount: totalRevenue
         });
+
+        sendTransactionEmail(user.email, user.username, {
+    type: 'SELL',
+    symbol,
+    quantity,
+    price: currentPrice,
+    date: transaction.createdAt
+}).catch(err => console.error('📧 Email send failed:', err));
+
 
         console.log(`✅ Sell transaction completed: ${transaction._id}`);
 
