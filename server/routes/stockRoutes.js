@@ -8,15 +8,14 @@ const {
     getStockHistory,
     screenStocks,
     getStockProfile,
-    getPrediction
+    
 } = require("../controllers/stockController");
 
 const { protect } = require("../middleware/authMiddleware");
 
 // ⚠️ IMPORTANT: Most specific routes FIRST!
 
-// Get ML prediction (must be before general :symbol routes)
-router.get("/:symbol/prediction", protect, getPrediction);
+
 
 // Get all stocks list
 router.get("/", protect, getAllStocks);
