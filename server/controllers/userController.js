@@ -1,7 +1,7 @@
 const User = require("../models/User");
 const Decimal = require("decimal.js");
 const { getMockStockData } = require("../services/stockService");
-const { generateToken } = require("./authController"); // Import token generator
+const { generateToken } = require("./authController");
 const PortfolioSnapshot = require("../models/PortfolioSnapshot");
 
 // @desc    Get user profile data
@@ -12,15 +12,23 @@ exports.getUserProfile = async (req, res) => {
             return res.status(404).json({ message: "User not found" });
         }
 
-        const portfolioValue = user.portfolio.reduce((acc, stock) => {
-            const stockData = getMockStockData(stock.symbol);
-            if (stockData) {
-                const price = new Decimal(stockData.price);
-                const quantity = new Decimal(stock.quantity);
-                return acc.plus(price.times(quantity));
+        // Calculate portfolio value with async support
+        let portfolioValue = new Decimal(0);
+        
+        for (const stock of user.portfolio) {
+            try {
+                // getMockStockData might be async, so await it
+                const stockData = await getMockStockData(stock.symbol);
+                if (stockData && stockData.price) {
+                    const price = new Decimal(stockData.price);
+                    const quantity = new Decimal(stock.quantity);
+                    portfolioValue = portfolioValue.plus(price.times(quantity));
+                }
+            } catch (error) {
+                console.error(`Error fetching price for ${stock.symbol}:`, error.message);
+                // Continue with next stock if one fails
             }
-            return acc;
-        }, new Decimal(0));
+        }
 
         const netWorth = new Decimal(user.walletBalance).plus(portfolioValue);
 
@@ -35,7 +43,10 @@ exports.getUserProfile = async (req, res) => {
         });
     } catch (error) {
         console.error("Error fetching user profile:", error.message);
-        res.status(500).json({ message: "Server error" });
+        res.status(500).json({ 
+            message: "Server error",
+            error: error.message 
+        });
     }
 };
 
@@ -64,8 +75,7 @@ exports.updateUserPassword = async (req, res) => {
     }
 };
 
-// --- NEW FUNCTION ---
-// @desc    Log out user from all other devices by invalidating old tokens
+// @desc    Log out user from all other devices
 // @route   POST /api/user/profile/logout-others
 exports.logoutOtherSessions = async (req, res) => {
     try {
@@ -74,28 +84,34 @@ exports.logoutOtherSessions = async (req, res) => {
             return res.status(404).json({ message: "User not found." });
         }
 
-        // Increment the token version to invalidate all older tokens
+        // Increment token version
         user.tokenVersion += 1;
         await user.save();
 
-        // Generate a new token for the current session so it remains active
+        // Generate new token
         const newToken = generateToken(user);
 
         res.json({
             message: "Successfully logged out of all other sessions.",
             token: newToken,
         });
-
     } catch (error) {
         console.error("Error logging out other sessions:", error.message);
         res.status(500).json({ message: "Server error" });
     }
 };
 
+// @desc    Get portfolio history
 exports.getPortfolioHistory = async (req, res) => {
     try {
-        const history = await PortfolioSnapshot.find({ user: req.user.id }).sort({ date: 'asc' });
-        res.json(history);
+        const history = await PortfolioSnapshot.find({ user: req.user.id })
+            .sort({ date: 'asc' })
+            .limit(100);
+        
+        res.json({
+            success: true,
+            history
+        });
     } catch (error) {
         console.error("Error fetching portfolio history:", error.message);
         res.status(500).json({ message: "Server error" });
