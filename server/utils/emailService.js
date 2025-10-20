@@ -1,40 +1,40 @@
 const nodemailer = require('nodemailer');
 
-/**
- * Creates a transporter configured to send emails via a Gmail account.
- * It uses credentials stored securely in environment variables.
- * @returns {Promise<object>} A Nodemailer transporter object.
- */
-const createGmailTransporter = async () => {
-    // Check if the required environment variables are set
-    if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
-        console.error("❌ Gmail credentials are not set in the .env file.");
-        console.error("   - Please set GMAIL_USER and GMAIL_APP_PASSWORD.");
-        // Return a dummy transporter to prevent crashes, but it won't send emails.
-        return null;
+const createEmailTransporter = async () => {
+    // Check if SendGrid API key exists
+    if (process.env.SENDGRID_API_KEY) {
+        return nodemailer.createTransport({
+            host: 'smtp.sendgrid.net',
+            port: 587,
+            secure: false,
+            auth: {
+                user: 'apikey',
+                pass: process.env.SENDGRID_API_KEY
+            }
+        });
+    }
+    
+    // Fallback to Gmail (for local development)
+    if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
+        return nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.GMAIL_USER,
+                pass: process.env.GMAIL_APP_PASSWORD,
+            },
+        });
     }
 
-    return nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-            user: process.env.GMAIL_USER,
-            pass: process.env.GMAIL_APP_PASSWORD, // Use the 16-digit App Password here
-        },
-    });
+    console.error("❌ Email credentials are not set.");
+    return null;
 };
 
-/**
- * Sends a transaction confirmation email to the user.
- * @param {string} userEmail - The recipient's email address.
- * @param {string} username - The user's name.
- * @param {object} transactionDetails - An object with details about the trade.
- */
 const sendTransactionEmail = async (userEmail, username, transactionDetails) => {
     try {
-        const transporter = await createGmailTransporter();
+        const transporter = await createEmailTransporter();
 
-        // If the transporter couldn't be created (due to missing credentials), stop here.
         if (!transporter) {
+            console.log('⚠️ Email transporter not configured, skipping email');
             return;
         }
 
@@ -77,8 +77,10 @@ const sendTransactionEmail = async (userEmail, username, transactionDetails) => 
             </div>
         `;
 
+        const fromEmail = process.env.SENDGRID_FROM_EMAIL || process.env.GMAIL_USER || 'noreply@vsm.com';
+
         await transporter.sendMail({
-            from: `"Virtual Stock Sim" <${process.env.GMAIL_USER}>`,
+            from: `"Virtual Stock Sim" <${fromEmail}>`,
             to: userEmail,
             subject: `Trade Confirmation: ${transactionType} ${quantity} shares of ${symbol}`,
             html: htmlBody,
@@ -87,7 +89,7 @@ const sendTransactionEmail = async (userEmail, username, transactionDetails) => 
         console.log(`📬 Transaction email successfully sent to ${userEmail}`);
 
     } catch (error) {
-        console.error("❌ Could not send transaction email via Gmail:", error);
+        console.error("❌ Could not send transaction email:", error.message);
     }
 };
 
