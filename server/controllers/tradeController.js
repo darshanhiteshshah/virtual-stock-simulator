@@ -102,12 +102,16 @@ const buyStock = async (req, res) => {
 
         // 📧 Send email notification (non-blocking)
         sendTransactionEmail(user.email, user.username, {
-            type: 'BUY',
-            symbol,
-            quantity,
-            price: currentPrice,
-            date: transaction.createdAt
-        }).catch(err => console.error('📧 Email send failed:', err));
+    type: 'BUY',
+    symbol,
+    quantity,
+    price: currentPrice,
+    date: transaction.createdAt
+}).catch(err => {
+    console.error('📧 Email send failed:', err.message);
+    console.error('📧 Full error:', err);
+});
+
 
         res.status(200).json({
             message: `Successfully bought ${quantity} shares of ${symbol}`,
@@ -231,12 +235,16 @@ const sellStock = async (req, res) => {
 
         // 📧 Send email notification (non-blocking)
         sendTransactionEmail(user.email, user.username, {
-            type: 'SELL',
-            symbol,
-            quantity,
-            price: currentPrice,
-            date: transaction.createdAt
-        }).catch(err => console.error('📧 Email send failed:', err));
+    type: 'SELL',
+    symbol,
+    quantity,
+    price: currentPrice,
+    date: transaction.createdAt
+}).catch(err => {
+    console.error('📧 Email send failed:', err.message);
+    console.error('📧 Full error:', err);
+});
+
 
         res.status(200).json({
             message: `Successfully sold ${quantity} shares of ${symbol}`,
