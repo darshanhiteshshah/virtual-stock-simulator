@@ -100,19 +100,18 @@ const buyStock = async (req, res) => {
 
         console.log(`✅ Transaction completed: ${transaction._id}`);
 
-// 📧 Send email notification (WAIT for it to complete)
-try {
-    await sendTransactionEmail(user.email, user.username, {
-        type: 'BUY',
-        symbol,
-        quantity,
-        price: currentPrice,
-        date: transaction.createdAt
-    });
-} catch (emailError) {
-    console.error('📧 Email send failed:', emailError.message);
-    // Don't fail the transaction if email fails
-}
+        // 📧 Send email notification (non-blocking)
+        sendTransactionEmail(user.email, user.username, {
+    type: 'BUY',
+    symbol,
+    quantity,
+    price: currentPrice,
+    date: transaction.createdAt
+}).catch(err => {
+    console.error('📧 Email send failed:', err.message);
+    console.error('📧 Full error:', err);
+});
+
 
         res.status(200).json({
             message: `Successfully bought ${quantity} shares of ${symbol}`,
@@ -234,19 +233,17 @@ const sellStock = async (req, res) => {
 
         console.log(`✅ Sell transaction completed: ${transaction._id}`);
 
-        try {
-            await sendTransactionEmail(user.email, user.username, {
-                type: 'SELL',
-                symbol,
-                quantity,
-                price: currentPrice,
-                date: transaction.createdAt
-            });
-            console.log('📧 Email sent successfully');
-        } catch (emailError) {
-            console.error('📧 Email failed but transaction succeeded:', emailError.message);
-            // Don't fail the transaction if email fails
-        }
+        // 📧 Send email notification (non-blocking)
+        sendTransactionEmail(user.email, user.username, {
+    type: 'SELL',
+    symbol,
+    quantity,
+    price: currentPrice,
+    date: transaction.createdAt
+}).catch(err => {
+    console.error('📧 Email send failed:', err.message);
+    console.error('📧 Full error:', err);
+});
 
 
         res.status(200).json({
