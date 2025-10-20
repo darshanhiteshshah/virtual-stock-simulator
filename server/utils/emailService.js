@@ -160,25 +160,42 @@ Thank you for trading with Virtual Stock Simulator!
         // Determine "from" email address
         const fromEmail = process.env.SENDGRID_FROM_EMAIL || process.env.GMAIL_USER || 'noreply@vsm.com';
 
-        // Send email
-        const info = await transporter.sendMail({
-            from: `"Virtual Stock Simulator" <${fromEmail}>`,
-            to: userEmail,
-            subject: `Trade Confirmation: ${transactionType} ${quantity} shares of ${symbol}`,
-            text: textBody,
-            html: htmlBody,
-        });
+        // ✅ ADD THESE DEBUG LOGS
+        console.log('📤 Attempting to send email...');
+        console.log('   To:', userEmail);
+        console.log('   From:', fromEmail);
+        console.log('   Subject:', `Trade Confirmation: ${transactionType} ${quantity} shares of ${symbol}`);
 
-        console.log(`📬 Transaction email successfully sent to ${userEmail}`);
-        console.log(`   Message ID: ${info.messageId}`);
+        // Send email with try-catch
+        try {
+            const info = await transporter.sendMail({
+                from: `"Virtual Stock Simulator" <${fromEmail}>`,
+                to: userEmail,
+                subject: `Trade Confirmation: ${transactionType} ${quantity} shares of ${symbol}`,
+                text: textBody,
+                html: htmlBody,
+            });
+
+            console.log(`📬 Transaction email successfully sent to ${userEmail}`);
+            console.log(`   Message ID: ${info.messageId}`);
+        } catch (sendError) {
+            console.error('❌ SendMail error:', sendError.message);
+            console.error('❌ Error code:', sendError.code);
+            console.error('❌ Full error:', JSON.stringify(sendError, null, 2));
+            throw sendError; // Re-throw so outer catch can handle it
+        }
 
     } catch (error) {
         console.error("❌ Could not send transaction email:", error.message);
+        console.error("❌ Error details:", error);
+        
         if (error.code === 'ETIMEDOUT') {
             console.error("   → Connection timeout. SMTP might be blocked on this server.");
             console.error("   → Consider using SendGrid instead of direct SMTP.");
         } else if (error.code === 'EAUTH') {
             console.error("   → Authentication failed. Check your API key or credentials.");
+        } else if (error.responseCode === 550) {
+            console.error("   → Email rejected. Sender email may not be verified.");
         }
     }
 };
