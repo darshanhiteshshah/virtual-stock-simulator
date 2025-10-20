@@ -4,7 +4,6 @@ const Transaction = require('../models/Transaction');
 const PendingOrder = require('../models/PendingOrder');
 const { sendTransactionEmail } = require('../utils/emailService');
 
-
 /**
  * @desc    Buy stock at current market price
  * @route   POST /api/trade/buy
@@ -99,16 +98,16 @@ const buyStock = async (req, res) => {
             totalAmount: totalCost
         });
 
-        sendTransactionEmail(user.email, user.username, {
-    type: 'BUY',
-    symbol,
-    quantity,
-    price: currentPrice,
-    date: transaction.createdAt
-}).catch(err => console.error('📧 Email send failed:', err));
-
-
         console.log(`✅ Transaction completed: ${transaction._id}`);
+
+        // 📧 Send email notification (non-blocking)
+        sendTransactionEmail(user.email, user.username, {
+            type: 'BUY',
+            symbol,
+            quantity,
+            price: currentPrice,
+            date: transaction.createdAt
+        }).catch(err => console.error('📧 Email send failed:', err));
 
         res.status(200).json({
             message: `Successfully bought ${quantity} shares of ${symbol}`,
@@ -228,16 +227,16 @@ const sellStock = async (req, res) => {
             totalAmount: totalRevenue
         });
 
-        sendTransactionEmail(user.email, user.username, {
-    type: 'SELL',
-    symbol,
-    quantity,
-    price: currentPrice,
-    date: transaction.createdAt
-}).catch(err => console.error('📧 Email send failed:', err));
-
-
         console.log(`✅ Sell transaction completed: ${transaction._id}`);
+
+        // 📧 Send email notification (non-blocking)
+        sendTransactionEmail(user.email, user.username, {
+            type: 'SELL',
+            symbol,
+            quantity,
+            price: currentPrice,
+            date: transaction.createdAt
+        }).catch(err => console.error('📧 Email send failed:', err));
 
         res.status(200).json({
             message: `Successfully sold ${quantity} shares of ${symbol}`,
@@ -400,22 +399,8 @@ const getPendingOrders = async (req, res) => {
     try {
         const userId = req.user._id;
 
-        console.log(`📋 Fetching pending orders`);
-        console.log(`User ID: ${userId}`);
-        console.log(`User ID type: ${typeof userId}`);
-        
-        // First, check if ANY orders exist for this user
-        const allOrders = await PendingOrder.find({ user: userId });
-        console.log(`Total orders for user (all statuses): ${allOrders.length}`);
-        
-        if (allOrders.length > 0) {
-            console.log(`Sample order user field: ${allOrders[0].user}`);
-            console.log(`Sample order user type: ${typeof allOrders[0].user}`);
-            console.log(`Sample order status: ${allOrders[0].status}`);
-            console.log(`IDs match: ${String(allOrders[0].user) === String(userId)}`);
-        }
+        console.log(`📋 Fetching pending orders for user ${userId}`);
 
-        // Now get pending orders
         const orders = await PendingOrder.find({
             user: userId,
             status: 'PENDING'
@@ -439,8 +424,6 @@ const getPendingOrders = async (req, res) => {
         });
     }
 };
-
-
 
 /**
  * @desc    Get all orders (pending, executed, cancelled)
