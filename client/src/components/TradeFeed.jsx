@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { fetchTradeFeed, fetchTradeFeedStats } from '../services/api';
 
 const TradeFeed = () => {
     const [trades, setTrades] = useState([]);
@@ -16,8 +16,8 @@ const TradeFeed = () => {
     const fetchFeed = async () => {
         try {
             const [feedRes, statsRes] = await Promise.all([
-                axios.get('/api/feed?limit=15'),
-                axios.get('/api/feed/stats')
+                fetchTradeFeed(15),
+                fetchTradeFeedStats()
             ]);
             
             setTrades(feedRes.data?.trades || []);

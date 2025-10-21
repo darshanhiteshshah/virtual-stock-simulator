@@ -5,6 +5,14 @@ const apiClient = axios.create({
     headers: { "Content-Type": "application/json" },
 });
 
-export const fetchTradeFeed = (token) => {
-    return apiClient.get("/feed", { headers: { Authorization: `Bearer ${token}` } });
+// Trade Feed APIs
+export const fetchTradeFeed = (limit = 15) => {
+    return apiClient.get(`/feed?limit=${limit}`);
 };
+
+export const fetchTradeFeedStats = () => {
+    return apiClient.get("/feed/stats");
+};
+
+// Export apiClient for other uses
+export default apiClient;
