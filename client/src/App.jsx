@@ -19,8 +19,8 @@ import Screener from "./pages/Screener";
 import StockProfilePage from "./pages/StockProfilePage";
 import AlgoTrading from './pages/AlgoTrading';
 import AlgoBuilder from './pages/AlgoBuilder';
+import News from './pages/News'; 
 
-// This is a simple wrapper component that adds a fade-in animation to any page.
 const PageWrapper = ({ children }) => (
     <motion.div
         initial={{ opacity: 0, y: 15 }}
@@ -36,12 +36,12 @@ function App() {
     return (
         <Router>
             <Routes>
-                {/* Public Routes - These do not use the main Layout */}
+                {/* Public Routes */}
                 <Route path="/" element={<PageWrapper><Home /></PageWrapper>} />
                 <Route path="/login" element={<PageWrapper><Login /></PageWrapper>} />
                 <Route path="/register" element={<PageWrapper><Register /></PageWrapper>} />
 
-                {/* Protected Routes - These are wrapped in the Layout and ProtectedRoute */}
+                {/* Protected Routes */}
                 <Route 
                     path="/dashboard" 
                     element={<ProtectedRoute><Layout><PageWrapper><Dashboard /></PageWrapper></Layout></ProtectedRoute>} 
@@ -78,12 +78,19 @@ function App() {
                     path="/alerts" 
                     element={<ProtectedRoute><Layout><PageWrapper><Alerts /></PageWrapper></Layout></ProtectedRoute>} 
                 />
+                
+                {/* ✅ FIXED NEWS ROUTE - WITH PROTECTEDROUTE, LAYOUT, AND PAGEWRAPPER */}
+                <Route 
+                    path="/news" 
+                    element={<ProtectedRoute><Layout><PageWrapper><News /></PageWrapper></Layout></ProtectedRoute>} 
+                />
+                
                 <Route 
                     path="/achievements" 
                     element={<ProtectedRoute><Layout><PageWrapper><Achievements /></PageWrapper></Layout></ProtectedRoute>} 
                 />
                 
-                {/* Algo Trading Routes - WITH Layout and PageWrapper */}
+                {/* Algo Trading Routes */}
                 <Route 
                     path="/algo" 
                     element={<ProtectedRoute><Layout><PageWrapper><AlgoTrading /></PageWrapper></Layout></ProtectedRoute>} 

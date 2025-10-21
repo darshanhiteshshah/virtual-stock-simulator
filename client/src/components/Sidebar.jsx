@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import useAuth from "../hooks/useAuth";
 import { 
@@ -9,112 +10,183 @@ import {
     Award, 
     Filter, 
     Gauge,
-    Zap  // ← Add this
+    Zap,
+    Newspaper,
+    ChevronLeft,
+    ChevronRight,
+    Menu
 } from "lucide-react";
 
 const Sidebar = () => {
     const { user } = useAuth();
+    const [isCollapsed, setIsCollapsed] = useState(false);
+    const [isMobileOpen, setIsMobileOpen] = useState(false);
+
     if (!user) return null;
 
-    const linkClasses = "flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 text-sm font-medium";
-    const activeLinkClasses = "bg-blue-600 text-white shadow-lg shadow-blue-900/30";
-    const inactiveLinkClasses = "text-slate-400 hover:text-white hover:bg-slate-800/50";
+    const linkClasses = "flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 text-sm font-medium group relative";
+    const activeLinkClasses = "bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-lg shadow-teal-900/30";
+    const inactiveLinkClasses = "text-slate-400 hover:text-white hover:bg-slate-800/80";
+
+    const navigationItems = [
+        { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+        { to: "/trade", icon: TrendingUp, label: "Trade" },
+        { to: "/watchlist", icon: Star, label: "Watchlist" },
+        { to: "/screener", icon: Filter, label: "Screener" },
+        { to: "/sentiment", icon: Gauge, label: "Sentiment" },
+    ];
+
+    const secondaryItems = [
+        { to: "/transactions", icon: History, label: "Transactions" },
+        { to: "/alerts", icon: Bell, label: "Price Alerts" },
+        { to: "/news", icon: Newspaper, label: "Market News" }, // ✅ NEWS ADDED
+        { to: "/achievements", icon: Award, label: "Achievements" },
+        { to: "/algo", icon: Zap, label: "Algo Trading" },
+    ];
 
     return (
-        <aside className="w-64 bg-slate-900/50 backdrop-blur-xl border-r border-slate-800/50 flex flex-col">
-            {/* Logo */}
-            <div className="p-6 border-b border-slate-800/50">
-                <h1 className="text-2xl font-bold text-white">VSM</h1>
-                <p className="text-xs text-slate-500 mt-1">Virtual Stock Market</p>
-            </div>
+        <>
+            {/* Mobile Menu Button */}
+            <button
+                onClick={() => setIsMobileOpen(!isMobileOpen)}
+                className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-slate-900 rounded-lg text-white border border-slate-800"
+            >
+                <Menu size={24} />
+            </button>
 
-            {/* Navigation */}
-            <nav className="flex flex-col gap-1 p-4 flex-1">
-                <NavLink 
-                    to="/dashboard" 
-                    className={({ isActive }) => `${linkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses}`}
-                >
-                    <LayoutDashboard size={20} />
-                    <span>Dashboard</span>
-                </NavLink>
+            {/* Mobile Overlay */}
+            {isMobileOpen && (
+                <div 
+                    className="lg:hidden fixed inset-0 bg-black/50 z-40"
+                    onClick={() => setIsMobileOpen(false)}
+                />
+            )}
 
-                <NavLink 
-                    to="/trade" 
-                    className={({ isActive }) => `${linkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses}`}
-                >
-                    <TrendingUp size={20} />
-                    <span>Trade</span>
-                </NavLink>
+            {/* Sidebar */}
+            <aside 
+                className={`
+                    ${isCollapsed ? 'w-20' : 'w-64'} 
+                    bg-gradient-to-b from-slate-900 to-slate-950 
+                    backdrop-blur-xl 
+                    border-r border-slate-800/50 
+                    flex flex-col 
+                    transition-all duration-300 
+                    fixed lg:relative 
+                    h-screen 
+                    z-40
+                    ${isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+                `}
+            >
+                {/* Header */}
+                <div className="p-6 border-b border-slate-800/50 flex items-center justify-between">
+                    {!isCollapsed && (
+                        <div>
+                            <h1 className="text-2xl font-bold bg-gradient-to-r from-teal-400 to-teal-600 bg-clip-text text-transparent">
+                                VSM
+                            </h1>
+                            <p className="text-xs text-slate-500 mt-1">Virtual Stock Market</p>
+                        </div>
+                    )}
+                    
+                    {isCollapsed && (
+                        <div className="mx-auto">
+                            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-teal-600 to-teal-700 flex items-center justify-center">
+                                <span className="text-white font-bold text-lg">V</span>
+                            </div>
+                        </div>
+                    )}
 
-                <NavLink 
-                    to="/watchlist" 
-                    className={({ isActive }) => `${linkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses}`}
-                >
-                    <Star size={20} />
-                    <span>Watchlist</span>
-                </NavLink>
-
-                <NavLink 
-                    to="/screener" 
-                    className={({ isActive }) => `${linkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses}`}
-                >
-                    <Filter size={20} />
-                    <span>Screener</span>
-                </NavLink>
-
-                <NavLink 
-                    to="/sentiment" 
-                    className={({ isActive }) => `${linkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses}`}
-                >
-                    <Gauge size={20} />
-                    <span>Sentiment</span>
-                </NavLink>
-
-                {/* Divider */}
-                <div className="my-3 border-t border-slate-800/50"></div>
-
-                <NavLink 
-                    to="/transactions" 
-                    className={({ isActive }) => `${linkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses}`}
-                >
-                    <History size={20} />
-                    <span>Transactions</span>
-                </NavLink>
-
-                <NavLink 
-                    to="/alerts" 
-                    className={({ isActive }) => `${linkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses}`}
-                >
-                    <Bell size={20} />
-                    <span>Price Alerts</span>
-                </NavLink>
-
-                <NavLink 
-                    to="/achievements" 
-                    className={({ isActive }) => `${linkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses}`}
-                >
-                    <Award size={20} />
-                    <span>Achievements</span>
-                </NavLink>
-
-                {/* Algo Trading Link - FIXED */}
-                <NavLink 
-                    to="/algo" 
-                    className={({ isActive }) => `${linkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses}`}
-                >
-                    <Zap size={20} />
-                    <span>Algo Trading</span>
-                </NavLink>
-            </nav>
-
-            {/* Footer */}
-            <div className="p-4 border-t border-slate-800/50">
-                <div className="bg-slate-800/50 rounded-lg p-3">
-                    <p className="text-xs text-slate-400 mb-1">Logged in as</p>
-                    <p className="text-sm font-semibold text-white truncate">{user.username}</p>
+                    {/* Toggle Button - Desktop Only */}
+                    <button
+                        onClick={() => setIsCollapsed(!isCollapsed)}
+                        className="hidden lg:block p-1.5 rounded-lg hover:bg-slate-800/50 text-slate-400 hover:text-white transition-colors"
+                    >
+                        {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+                    </button>
                 </div>
-            </div>
-        </aside>
+
+                {/* Navigation - Primary */}
+                <nav className="flex flex-col gap-1 p-4 flex-1 overflow-y-auto">
+                    {navigationItems.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                            <NavLink 
+                                key={item.to}
+                                to={item.to} 
+                                className={({ isActive }) => 
+                                    `${linkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses}`
+                                }
+                                onClick={() => setIsMobileOpen(false)}
+                            >
+                                <Icon size={20} className="flex-shrink-0" />
+                                {!isCollapsed && <span>{item.label}</span>}
+                                
+                                {/* Tooltip for collapsed state */}
+                                {isCollapsed && (
+                                    <div className="absolute left-full ml-2 px-3 py-2 bg-slate-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap shadow-xl border border-slate-700 transition-opacity">
+                                        {item.label}
+                                    </div>
+                                )}
+                            </NavLink>
+                        );
+                    })}
+
+                    {/* Divider */}
+                    <div className={`my-3 ${isCollapsed ? 'border-t border-slate-800' : 'border-t border-slate-800/50'}`}></div>
+
+                    {/* Navigation - Secondary */}
+                    {secondaryItems.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                            <NavLink 
+                                key={item.to}
+                                to={item.to} 
+                                className={({ isActive }) => 
+                                    `${linkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses}`
+                                }
+                                onClick={() => setIsMobileOpen(false)}
+                            >
+                                <Icon size={20} className="flex-shrink-0" />
+                                {!isCollapsed && <span>{item.label}</span>}
+                                
+                                {/* Tooltip for collapsed state */}
+                                {isCollapsed && (
+                                    <div className="absolute left-full ml-2 px-3 py-2 bg-slate-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap shadow-xl border border-slate-700 transition-opacity">
+                                        {item.label}
+                                    </div>
+                                )}
+                            </NavLink>
+                        );
+                    })}
+                </nav>
+
+                {/* Footer - User Info */}
+                <div className="p-4 border-t border-slate-800/50">
+                    {!isCollapsed ? (
+                        <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-lg p-3 border border-slate-700/50">
+                            <p className="text-xs text-slate-400 mb-1">Logged in as</p>
+                            <p className="text-sm font-semibold text-white truncate">{user.username}</p>
+                            <div className="flex items-center space-x-1 mt-2">
+                                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                                <span className="text-xs text-green-400">Online</span>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="flex justify-center">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-600 to-teal-700 flex items-center justify-center text-white font-bold border-2 border-teal-500/30 relative group">
+                                {user.username.charAt(0).toUpperCase()}
+                                <div className="absolute w-3 h-3 bg-green-500 border-2 border-slate-900 rounded-full bottom-0 right-0"></div>
+                                
+                                {/* Tooltip */}
+                                <div className="absolute left-full ml-2 px-3 py-2 bg-slate-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap shadow-xl border border-slate-700 transition-opacity">
+                                    {user.username}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </aside>
+        </>
     );
 };
 
