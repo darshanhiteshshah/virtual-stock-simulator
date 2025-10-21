@@ -4,6 +4,8 @@ const Transaction = require('../models/Transaction');
 const PendingOrder = require('../models/PendingOrder');
 const { sendTransactionEmail } = require('../utils/emailService');
 const { addTradeToFeed } = require('../utils/tradefeedService'); // ADD THIS
+const { canTrade } = require('../utils/marketHours');
+
 
 /**
  * @desc    Buy stock at current market price
@@ -23,6 +25,16 @@ const buyStock = async (req, res) => {
                 message: 'Invalid symbol or quantity' 
             });
         }
+
+        // ✅ ADD THIS: Check market hours
+const tradeCheck = canTrade();
+if (!tradeCheck.allowed) {
+    return res.status(403).json({
+        message: 'Trading not allowed at this time',
+        reason: tradeCheck.message,
+        details: tradeCheck.details
+    });
+}
 
         // Get current stock price
         let stockData;
@@ -164,6 +176,16 @@ const sellStock = async (req, res) => {
                 message: 'Invalid symbol or quantity' 
             });
         }
+
+        // ✅ ADD THIS: Check market hours
+const tradeCheck = canTrade();
+if (!tradeCheck.allowed) {
+    return res.status(403).json({
+        message: 'Trading not allowed at this time',
+        reason: tradeCheck.message,
+        details: tradeCheck.details
+    });
+}
 
         // Get current stock price
         let stockData;

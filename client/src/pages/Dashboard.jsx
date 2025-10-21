@@ -9,6 +9,8 @@ import { formatCurrency } from '../utils/currencyFormatter';
 import { Wallet, TrendingUp, PieChart, Activity } from 'lucide-react';
 import PortfolioHistoryChart from '../components/PortfolioHistoryChart';
 
+import MarketStatus from '../components/MarketStatus';
+
 const Dashboard = () => {
   const { user } = useAuth();
   const { portfolio = [], walletBalance = 0, isLoading, error } = usePortfolio();
@@ -65,6 +67,10 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6">
+       {/* TOP BAR - Market Status */}
+            <div className="max-w-7xl mx-auto mb-6">
+                <MarketStatus /> {/* ADD THIS */}
+            </div>
       <div className="max-w-7xl mx-auto space-y-6">
         
         {/* Header */}
