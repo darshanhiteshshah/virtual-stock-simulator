@@ -46,6 +46,7 @@ const achievementRoutes = require("./routes/achievementRoutes");
 const feedRoutes = require("./routes/feedRoutes");
 const algoRoutes = require('./routes/algoRoutes');
 
+
 console.log('✅ All modules loaded successfully\n');
 
 // Initialize Express app
@@ -80,6 +81,7 @@ app.use("/api/alerts", alertRoutes);
 app.use("/api/achievements", achievementRoutes);
 app.use("/api/feed", feedRoutes);
 app.use('/api/algo', algoRoutes);
+
 
 
 console.log('✅ Routes registered\n');

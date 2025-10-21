@@ -1,142 +1,140 @@
-import React, { useState, useEffect } from 'react';
-import useAuth from '../hooks/useAuth';
-import { fetchTradeFeed } from '../services/feedService';
-import { formatCurrency } from '../utils/currencyFormatter';
-import { Activity, ShoppingCart, Banknote, Clock } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import axios from 'axios';
 
 const TradeFeed = () => {
-    const { user } = useAuth();
-    const [feed, setFeed] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [lastUpdate, setLastUpdate] = useState(new Date());
+    const [trades, setTrades] = useState([]);
+    const [stats, setStats] = useState(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (!user?.token) return;
+        fetchFeed();
+        const interval = setInterval(fetchFeed, 5000); // Refresh every 5 seconds
+        return () => clearInterval(interval);
+    }, []);
 
-        const getFeed = async () => {
-            try {
-                const res = await fetchTradeFeed(user.token);
-                setFeed(res.data);
-                setLastUpdate(new Date());
-            } catch (error) {
-                console.error("Failed to fetch trade feed", error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        getFeed();
-        const intervalId = setInterval(getFeed, 5000);
-
-        return () => clearInterval(intervalId);
-    }, [user]);
-
-    // Format time elapsed
-    const getTimeElapsed = () => {
-        const seconds = Math.floor((new Date() - lastUpdate) / 1000);
-        if (seconds < 60) return `${seconds}s ago`;
-        return `${Math.floor(seconds / 60)}m ago`;
+    const fetchFeed = async () => {
+        try {
+            const [feedRes, statsRes] = await Promise.all([
+                axios.get('/api/feed?limit=15'),
+                axios.get('/api/feed/stats')
+            ]);
+            
+            setTrades(feedRes.data.trades);
+            setStats(statsRes.data.stats);
+            setLoading(false);
+        } catch (error) {
+            console.error('Failed to fetch trade feed:', error);
+            setLoading(false);
+        }
     };
 
-    const [timeElapsed, setTimeElapsed] = useState('Just now');
-
-    useEffect(() => {
-        const timer = setInterval(() => {
-            setTimeElapsed(getTimeElapsed());
-        }, 1000);
-
-        return () => clearInterval(timer);
-    }, [lastUpdate]);
-
-    return (
-        <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-800/50 rounded-xl p-6 h-full flex flex-col">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-4">
-                <h2 className="text-white text-lg font-semibold flex items-center gap-2">
-                    <Activity size={20} className="text-blue-400" />
-                    Live Trade Feed
-                </h2>
-                <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                    <Clock size={12} />
-                    <span>{timeElapsed}</span>
+    if (loading) {
+        return (
+            <div className="bg-white rounded-lg shadow p-6">
+                <div className="animate-pulse">
+                    <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
+                    {[...Array(5)].map((_, i) => (
+                        <div key={i} className="h-16 bg-gray-100 rounded mb-2"></div>
+                    ))}
                 </div>
             </div>
+        );
+    }
 
-            {/* Feed Content */}
-            <div className="overflow-y-auto flex-1 space-y-2 pr-2 custom-scrollbar">
-                {isLoading ? (
-                    <div className="flex flex-col items-center justify-center py-8">
-                        <div className="w-8 h-8 border-2 border-slate-700 border-t-blue-500 rounded-full animate-spin mb-3"></div>
-                        <p className="text-slate-400 text-sm">Loading feed...</p>
+    return (
+        <div className="bg-white rounded-lg shadow">
+            {/* Header */}
+            <div className="p-6 border-b">
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-gray-900">Live Trade Feed</h2>
+                    <div className="flex items-center space-x-2">
+                        <span className="relative flex h-3 w-3">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                        </span>
+                        <span className="text-sm text-gray-500">Live</span>
                     </div>
-                ) : feed.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-8">
-                        <div className="w-16 h-16 bg-slate-800/50 rounded-full flex items-center justify-center mb-4">
-                            <Activity className="w-8 h-8 text-slate-600" />
+                </div>
+
+                {/* Stats */}
+                {stats && (
+                    <div className="grid grid-cols-3 gap-4">
+                        <div className="text-center">
+                            <div className="text-2xl font-bold text-gray-900">{stats.totalTrades}</div>
+                            <div className="text-xs text-gray-500">Total Trades</div>
                         </div>
-                        <p className="text-slate-400 text-sm text-center">No recent trades</p>
-                        <p className="text-slate-500 text-xs text-center mt-1">Trade feed will appear here</p>
+                        <div className="text-center">
+                            <div className="text-2xl font-bold text-blue-600">{stats.buyCount}</div>
+                            <div className="text-xs text-gray-500">Buys</div>
+                        </div>
+                        <div className="text-center">
+                            <div className="text-2xl font-bold text-green-600">{stats.sellCount}</div>
+                            <div className="text-xs text-gray-500">Sells</div>
+                        </div>
                     </div>
-                ) : (
-                    feed.map((trade, index) => {
-                        const isBuy = trade.type === 'BUY';
-                        const totalValue = trade.quantity * trade.price;
-
-                        return (
-                            <div
-                                key={`${trade.timestamp}-${index}`}
-                                className="flex items-center justify-between p-3 rounded-lg bg-slate-800/30 hover:bg-slate-800/50 transition-colors border border-slate-800/50"
-                            >
-                                {/* Left: Type & Symbol */}
-                                <div className="flex items-center gap-3 flex-1 min-w-0">
-                                    <div className={`p-2 rounded-lg ${
-                                        isBuy 
-                                            ? 'bg-blue-500/10 border border-blue-500/20' 
-                                            : 'bg-emerald-500/10 border border-emerald-500/20'
-                                    }`}>
-                                        {isBuy ? (
-                                            <ShoppingCart className="w-4 h-4 text-blue-400" />
-                                        ) : (
-                                            <Banknote className="w-4 h-4 text-emerald-400" />
-                                        )}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2">
-                                            <span className={`text-xs font-bold ${
-                                                isBuy ? 'text-blue-400' : 'text-emerald-400'
-                                            }`}>
-                                                {trade.type}
-                                            </span>
-                                            <span className="text-sm font-semibold text-white truncate">
-                                                {trade.symbol}
-                                            </span>
-                                        </div>
-                                        <p className="text-xs text-slate-500">
-                                            {trade.quantity} × {formatCurrency(trade.price)}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {/* Right: Total Value */}
-                                <div className="text-right">
-                                    <p className="text-sm font-semibold text-white">
-                                        {formatCurrency(totalValue)}
-                                    </p>
-                                </div>
-                            </div>
-                        );
-                    })
                 )}
             </div>
 
-            {/* Footer */}
-            {!isLoading && feed.length > 0 && (
-                <div className="mt-4 pt-3 border-t border-slate-800/50 text-center">
-                    <p className="text-xs text-slate-500">
-                        Showing last {feed.length} trades
-                    </p>
-                </div>
-            )}
+            {/* Feed List */}
+            <div className="divide-y max-h-[600px] overflow-y-auto">
+                <AnimatePresence>
+                    {trades.map((trade, index) => (
+                        <motion.div
+                            key={`${trade.timestamp}-${index}`}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 20 }}
+                            className="p-4 hover:bg-gray-50 transition-colors"
+                        >
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-3">
+                                    {/* User Avatar */}
+                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold">
+                                        {trade.username.charAt(0).toUpperCase()}
+                                    </div>
+
+                                    {/* Trade Info */}
+                                    <div>
+                                        <div className="flex items-center space-x-2">
+                                            <span className="font-medium text-gray-900">{trade.username}</span>
+                                            <span className={`px-2 py-0.5 text-xs font-semibold rounded ${
+                                                trade.type === 'BUY' 
+                                                    ? 'bg-blue-100 text-blue-800' 
+                                                    : 'bg-green-100 text-green-800'
+                                            }`}>
+                                                {trade.type}
+                                            </span>
+                                        </div>
+                                        <div className="text-sm text-gray-600">
+                                            {trade.quantity} shares of <span className="font-semibold">{trade.symbol}</span> @ ₹{trade.price.toFixed(2)}
+                                        </div>
+                                        <div className="text-xs text-gray-400">
+                                            {new Date(trade.timestamp).toLocaleTimeString('en-IN', { 
+                                                hour: '2-digit', 
+                                                minute: '2-digit' 
+                                            })}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Trade Value */}
+                                <div className="text-right">
+                                    <div className="text-lg font-bold text-gray-900">
+                                        ₹{trade.totalValue}
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    ))}
+                </AnimatePresence>
+
+                {trades.length === 0 && (
+                    <div className="p-8 text-center text-gray-500">
+                        <p>No recent trades yet. Be the first to trade!</p>
+                    </div>
+                )}
+            </div>
         </div>
     );
 };

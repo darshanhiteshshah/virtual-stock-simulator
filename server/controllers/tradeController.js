@@ -3,6 +3,7 @@ const User = require('../models/User');
 const Transaction = require('../models/Transaction');
 const PendingOrder = require('../models/PendingOrder');
 const { sendTransactionEmail } = require('../utils/emailService');
+const { addTradeToFeed } = require('../utils/tradefeedService'); // ADD THIS
 
 /**
  * @desc    Buy stock at current market price
@@ -23,7 +24,7 @@ const buyStock = async (req, res) => {
             });
         }
 
-        // Get current stock price from Yahoo Finance
+        // Get current stock price
         let stockData;
         try {
             stockData = await getMockStockData(symbol);
@@ -100,18 +101,27 @@ const buyStock = async (req, res) => {
 
         console.log(`✅ Transaction completed: ${transaction._id}`);
 
-        // 📧 Send email notification (non-blocking)
-        sendTransactionEmail(user.email, user.username, {
-    type: 'BUY',
-    symbol,
-    quantity,
-    price: currentPrice,
-    date: transaction.createdAt
-}).catch(err => {
-    console.error('📧 Email send failed:', err.message);
-    console.error('📧 Full error:', err);
-});
+        // Send email (non-blocking)
+        try {
+            await sendTransactionEmail(user.email, user.username, {
+                type: 'BUY',
+                symbol,
+                quantity,
+                price: currentPrice,
+                date: transaction.createdAt
+            });
+            console.log('📧 Email sent successfully');
+        } catch (emailError) {
+            console.error('📧 Email failed:', emailError.message);
+        }
 
+        // 📢 ADD TO LIVE FEED
+        addTradeToFeed({
+            symbol,
+            quantity,
+            price: currentPrice,
+            type: 'BUY'
+        }, user.username);
 
         res.status(200).json({
             message: `Successfully bought ${quantity} shares of ${symbol}`,
@@ -155,7 +165,7 @@ const sellStock = async (req, res) => {
             });
         }
 
-        // Get current stock price from Yahoo Finance
+        // Get current stock price
         let stockData;
         try {
             stockData = await getMockStockData(symbol);
@@ -233,18 +243,27 @@ const sellStock = async (req, res) => {
 
         console.log(`✅ Sell transaction completed: ${transaction._id}`);
 
-        // 📧 Send email notification (non-blocking)
-        sendTransactionEmail(user.email, user.username, {
-    type: 'SELL',
-    symbol,
-    quantity,
-    price: currentPrice,
-    date: transaction.createdAt
-}).catch(err => {
-    console.error('📧 Email send failed:', err.message);
-    console.error('📧 Full error:', err);
-});
+        // Send email (non-blocking)
+        try {
+            await sendTransactionEmail(user.email, user.username, {
+                type: 'SELL',
+                symbol,
+                quantity,
+                price: currentPrice,
+                date: transaction.createdAt
+            });
+            console.log('📧 Email sent successfully');
+        } catch (emailError) {
+            console.error('📧 Email failed:', emailError.message);
+        }
 
+        // 📢 ADD TO LIVE FEED
+        addTradeToFeed({
+            symbol,
+            quantity,
+            price: currentPrice,
+            type: 'SELL'
+        }, user.username);
 
         res.status(200).json({
             message: `Successfully sold ${quantity} shares of ${symbol}`,
