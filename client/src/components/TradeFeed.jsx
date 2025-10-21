@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { fetchTradeFeed, fetchTradeFeedStats } from '../services/api';
+import { fetchTradeFeed, fetchTradeFeedStats } from '../services/feedService';
 
 const TradeFeed = () => {
     const [trades, setTrades] = useState([]);
