@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { fetchStockNews } from '../services/newsService';
+import { Newspaper, ExternalLink, Clock } from 'lucide-react';
 
 const StockNews = ({ symbol }) => {
     const [news, setNews] = useState([]);
@@ -8,20 +9,20 @@ const StockNews = ({ symbol }) => {
 
     useEffect(() => {
         if (symbol) {
-            fetchNews();
+            loadNews();
         }
     }, [symbol]);
 
-    const fetchNews = async () => {
+    const loadNews = async () => {
         try {
             setLoading(true);
-            const response = await fetchStockNews(symbol, 5);
-            setNews(response.data?.news || []);
+            const data = await fetchStockNews(symbol, 5);
+            setNews(data.news || []);
             setError(null);
-            setLoading(false);
         } catch (error) {
             console.error(`Failed to fetch news for ${symbol}:`, error);
             setError('No news available');
+        } finally {
             setLoading(false);
         }
     };
@@ -39,10 +40,14 @@ const StockNews = ({ symbol }) => {
     if (loading) {
         return (
             <div className="space-y-3">
+                <h3 className="text-sm font-bold text-slate-400 uppercase flex items-center gap-2">
+                    <Newspaper className="w-4 h-4" />
+                    Recent News
+                </h3>
                 {[...Array(3)].map((_, i) => (
-                    <div key={i} className="animate-pulse">
-                        <div className="h-4 bg-gray-800 rounded w-3/4 mb-2"></div>
-                        <div className="h-3 bg-gray-800 rounded w-1/2"></div>
+                    <div key={i} className="animate-pulse p-3 bg-slate-800/30 rounded-lg">
+                        <div className="h-4 bg-slate-700 rounded w-3/4 mb-2"></div>
+                        <div className="h-3 bg-slate-700 rounded w-1/2"></div>
                     </div>
                 ))}
             </div>
@@ -51,15 +56,25 @@ const StockNews = ({ symbol }) => {
 
     if (error || !news.length) {
         return (
-            <div className="text-center py-4">
-                <p className="text-gray-500 text-sm">No recent news for {symbol}</p>
+            <div>
+                <h3 className="text-sm font-bold text-slate-400 uppercase flex items-center gap-2 mb-4">
+                    <Newspaper className="w-4 h-4" />
+                    Recent News
+                </h3>
+                <div className="text-center py-6 bg-slate-800/30 rounded-lg">
+                    <Newspaper className="w-12 h-12 text-slate-700 mx-auto mb-2" />
+                    <p className="text-slate-500 text-sm">No recent news for {symbol}</p>
+                </div>
             </div>
         );
     }
 
     return (
         <div className="space-y-4">
-            <h3 className="text-sm font-bold text-gray-400 uppercase">Recent News</h3>
+            <h3 className="text-sm font-bold text-slate-400 uppercase flex items-center gap-2">
+                <Newspaper className="w-4 h-4" />
+                Recent News
+            </h3>
             <div className="space-y-3">
                 {news.map((article, index) => (
                     <a
@@ -67,14 +82,27 @@ const StockNews = ({ symbol }) => {
                         href={article.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="block p-3 bg-gray-800/50 rounded-lg hover:bg-gray-800 transition-colors group"
+                        className="block p-3 bg-slate-800/50 rounded-lg hover:bg-slate-800 transition-colors group border border-slate-700/50"
                     >
-                        <h4 className="text-sm font-medium text-gray-200 line-clamp-2 group-hover:text-teal-400 transition-colors mb-1">
-                            {article.headline}
-                        </h4>
-                        <div className="flex items-center justify-between text-xs text-gray-500">
-                            <span>{article.source}</span>
-                            <span>{getTimeAgo(article.publishedAt)}</span>
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                            <h4 className="text-sm font-medium text-slate-200 line-clamp-2 group-hover:text-blue-400 transition-colors flex-1">
+                                {article.headline}
+                            </h4>
+                            <ExternalLink className="w-4 h-4 text-slate-600 group-hover:text-blue-500 transition-colors flex-shrink-0 mt-0.5" />
+                        </div>
+                        
+                        {article.description && (
+                            <p className="text-xs text-slate-500 line-clamp-2 mb-2">
+                                {article.description}
+                            </p>
+                        )}
+
+                        <div className="flex items-center justify-between text-xs text-slate-500">
+                            <span className="font-medium">{article.source}</span>
+                            <span className="flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                {getTimeAgo(article.publishedAt)}
+                            </span>
                         </div>
                     </a>
                 ))}

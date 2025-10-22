@@ -1,8 +1,9 @@
-
+import apiClient from '../api';
 
 /**
  * Fetch recent market news
  * @param {number} limit - Number of articles to fetch (default: 10)
+ * @returns {Promise<Object>} - { success, count, news }
  */
 export const fetchMarketNews = async (limit = 10) => {
     try {
@@ -18,6 +19,7 @@ export const fetchMarketNews = async (limit = 10) => {
  * Fetch news for specific stock symbol
  * @param {string} symbol - Stock symbol (e.g., 'RELIANCE')
  * @param {number} limit - Number of articles to fetch (default: 5)
+ * @returns {Promise<Object>} - { success, symbol, count, news }
  */
 export const fetchStockNews = async (symbol, limit = 5) => {
     try {
@@ -31,6 +33,7 @@ export const fetchStockNews = async (symbol, limit = 5) => {
 
 /**
  * Check if news service is configured on backend
+ * @returns {Promise<Object>} - { success, configured, services, message }
  */
 export const fetchNewsStatus = async () => {
     try {

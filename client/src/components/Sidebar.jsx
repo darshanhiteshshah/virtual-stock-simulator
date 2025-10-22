@@ -13,8 +13,8 @@ import {
     Zap,
     Newspaper,
     ChevronLeft,
-    ChevronRight,
-    Menu
+    Menu,
+    X
 } from "lucide-react";
 
 const Sidebar = () => {
@@ -25,7 +25,7 @@ const Sidebar = () => {
     if (!user) return null;
 
     const linkClasses = "flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 text-sm font-medium group relative";
-    const activeLinkClasses = "bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-lg shadow-teal-900/30";
+    const activeLinkClasses = "bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-900/30";
     const inactiveLinkClasses = "text-slate-400 hover:text-white hover:bg-slate-800/80";
 
     const navigationItems = [
@@ -39,19 +39,19 @@ const Sidebar = () => {
     const secondaryItems = [
         { to: "/transactions", icon: History, label: "Transactions" },
         { to: "/alerts", icon: Bell, label: "Price Alerts" },
-        { to: "/news", icon: Newspaper, label: "Market News" }, // ✅ NEWS ADDED
+        { to: "/news", icon: Newspaper, label: "Market News" },
         { to: "/achievements", icon: Award, label: "Achievements" },
         { to: "/algo", icon: Zap, label: "Algo Trading" },
     ];
 
     return (
         <>
-            {/* Mobile Menu Button */}
+            {/* Mobile Menu Button - Fixed Position */}
             <button
                 onClick={() => setIsMobileOpen(!isMobileOpen)}
-                className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-slate-900 rounded-lg text-white border border-slate-800"
+                className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-slate-900 rounded-lg text-white border border-slate-800 shadow-lg"
             >
-                <Menu size={24} />
+                {isMobileOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
 
             {/* Mobile Overlay */}
@@ -62,26 +62,25 @@ const Sidebar = () => {
                 />
             )}
 
-            {/* Sidebar */}
+            {/* Sidebar Container */}
             <aside 
                 className={`
                     ${isCollapsed ? 'w-20' : 'w-64'} 
                     bg-gradient-to-b from-slate-900 to-slate-950 
-                    backdrop-blur-xl 
                     border-r border-slate-800/50 
                     flex flex-col 
-                    transition-all duration-300 
-                    fixed lg:relative 
-                    h-screen 
+                    transition-all duration-300 ease-in-out
+                    h-screen
+                    fixed lg:relative
                     z-40
                     ${isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
                 `}
             >
                 {/* Header */}
-                <div className="p-6 border-b border-slate-800/50 flex items-center justify-between">
+                <div className="p-6 border-b border-slate-800/50 flex items-center justify-between flex-shrink-0">
                     {!isCollapsed && (
                         <div>
-                            <h1 className="text-2xl font-bold bg-gradient-to-r from-teal-400 to-teal-600 bg-clip-text text-transparent">
+                            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
                                 VSM
                             </h1>
                             <p className="text-xs text-slate-500 mt-1">Virtual Stock Market</p>
@@ -90,7 +89,7 @@ const Sidebar = () => {
                     
                     {isCollapsed && (
                         <div className="mx-auto">
-                            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-teal-600 to-teal-700 flex items-center justify-center">
+                            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center">
                                 <span className="text-white font-bold text-lg">V</span>
                             </div>
                         </div>
@@ -99,14 +98,18 @@ const Sidebar = () => {
                     {/* Toggle Button - Desktop Only */}
                     <button
                         onClick={() => setIsCollapsed(!isCollapsed)}
-                        className="hidden lg:block p-1.5 rounded-lg hover:bg-slate-800/50 text-slate-400 hover:text-white transition-colors"
+                        className="hidden lg:flex items-center justify-center w-8 h-8 rounded-lg hover:bg-slate-800/50 text-slate-400 hover:text-white transition-colors"
                     >
-                        {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+                        <ChevronLeft 
+                            size={18} 
+                            className={`transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`}
+                        />
                     </button>
                 </div>
 
-                {/* Navigation - Primary */}
+                {/* Navigation - Scrollable */}
                 <nav className="flex flex-col gap-1 p-4 flex-1 overflow-y-auto">
+                    {/* Primary Navigation */}
                     {navigationItems.map((item) => {
                         const Icon = item.icon;
                         return (
@@ -123,7 +126,7 @@ const Sidebar = () => {
                                 
                                 {/* Tooltip for collapsed state */}
                                 {isCollapsed && (
-                                    <div className="absolute left-full ml-2 px-3 py-2 bg-slate-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap shadow-xl border border-slate-700 transition-opacity">
+                                    <div className="absolute left-full ml-2 px-3 py-2 bg-slate-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap shadow-xl border border-slate-700 transition-opacity z-50">
                                         {item.label}
                                     </div>
                                 )}
@@ -132,9 +135,9 @@ const Sidebar = () => {
                     })}
 
                     {/* Divider */}
-                    <div className={`my-3 ${isCollapsed ? 'border-t border-slate-800' : 'border-t border-slate-800/50'}`}></div>
+                    <div className="my-3 border-t border-slate-800/50"></div>
 
-                    {/* Navigation - Secondary */}
+                    {/* Secondary Navigation */}
                     {secondaryItems.map((item) => {
                         const Icon = item.icon;
                         return (
@@ -151,7 +154,7 @@ const Sidebar = () => {
                                 
                                 {/* Tooltip for collapsed state */}
                                 {isCollapsed && (
-                                    <div className="absolute left-full ml-2 px-3 py-2 bg-slate-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap shadow-xl border border-slate-700 transition-opacity">
+                                    <div className="absolute left-full ml-2 px-3 py-2 bg-slate-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap shadow-xl border border-slate-700 transition-opacity z-50">
                                         {item.label}
                                     </div>
                                 )}
@@ -161,7 +164,7 @@ const Sidebar = () => {
                 </nav>
 
                 {/* Footer - User Info */}
-                <div className="p-4 border-t border-slate-800/50">
+                <div className="p-4 border-t border-slate-800/50 flex-shrink-0">
                     {!isCollapsed ? (
                         <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-lg p-3 border border-slate-700/50">
                             <p className="text-xs text-slate-400 mb-1">Logged in as</p>
@@ -173,12 +176,12 @@ const Sidebar = () => {
                         </div>
                     ) : (
                         <div className="flex justify-center">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-600 to-teal-700 flex items-center justify-center text-white font-bold border-2 border-teal-500/30 relative group">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center text-white font-bold border-2 border-blue-500/30 relative group">
                                 {user.username.charAt(0).toUpperCase()}
                                 <div className="absolute w-3 h-3 bg-green-500 border-2 border-slate-900 rounded-full bottom-0 right-0"></div>
                                 
                                 {/* Tooltip */}
-                                <div className="absolute left-full ml-2 px-3 py-2 bg-slate-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap shadow-xl border border-slate-700 transition-opacity">
+                                <div className="absolute left-full ml-2 px-3 py-2 bg-slate-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap shadow-xl border border-slate-700 transition-opacity z-50">
                                     {user.username}
                                 </div>
                             </div>
