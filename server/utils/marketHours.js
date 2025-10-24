@@ -1,203 +1,167 @@
 /**
- * Indian Stock Market Hours Checker
- * BSE/NSE Trading Hours: 9:15 AM - 3:30 PM IST (Monday - Friday)
+ * Check if current time is within market hours (9:15 AM - 3:30 PM IST)
+ * BSE/NSE trading hours: Monday to Friday
  */
 
-// Market timings (IST)
-const MARKET_OPEN_HOUR = 9;
-const MARKET_OPEN_MINUTE = 15;
-const MARKET_CLOSE_HOUR = 15;
-const MARKET_CLOSE_MINUTE = 30;
+// Force IST timezone
+const getISTTime = () => {
+    const now = new Date();
+    
+    // Convert to IST (UTC+5:30)
+    const istOffset = 5.5 * 60 * 60 * 1000; // 5 hours 30 minutes in milliseconds
+    const utcTime = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
+    const istTime = new Date(utcTime + istOffset);
+    
+    return istTime;
+};
 
-// Pre-market: 9:00 AM - 9:15 AM
-const PREMARKET_OPEN_HOUR = 9;
-const PREMARKET_OPEN_MINUTE = 0;
+const isMarketOpen = () => {
+    const now = getISTTime(); // Use IST time always
+    
+    // Get day of week (0 = Sunday, 6 = Saturday)
+    const day = now.getDay();
+    
+    // Market closed on weekends
+    if (day === 0 || day === 6) {
+        return false;
+    }
+    
+    // Get current time in IST
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+    const currentTime = hours * 100 + minutes;
+    
+    // Market hours: 9:15 AM (0915) to 3:30 PM (1530)
+    const marketOpen = 915;  // 9:15 AM
+    const marketClose = 1530; // 3:30 PM
+    
+    return currentTime >= marketOpen && currentTime <= marketClose;
+};
 
-// Post-market: 3:30 PM - 4:00 PM (for orders, not execution)
-const POSTMARKET_CLOSE_HOUR = 16;
-const POSTMARKET_CLOSE_MINUTE = 0;
+const getMarketStatus = () => {
+    const now = getISTTime();
+    const day = now.getDay();
+    
+    // Weekend check
+    if (day === 0 || day === 6) {
+        return {
+            isOpen: false,
+            status: 'CLOSED',
+            message: 'Market is closed on weekends',
+            nextOpen: getNextMarketOpen(now)
+        };
+    }
+    
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+    const currentTime = hours * 100 + minutes;
+    
+    const preMarket = 900;   // 9:00 AM
+    const marketOpen = 915;  // 9:15 AM
+    const marketClose = 1530; // 3:30 PM
+    const postMarket = 1600;  // 4:00 PM
+    
+    if (currentTime < preMarket) {
+        return {
+            isOpen: false,
+            status: 'PRE_MARKET',
+            message: 'Pre-market period',
+            nextOpen: getNextMarketOpen(now)
+        };
+    } else if (currentTime >= preMarket && currentTime < marketOpen) {
+        return {
+            isOpen: false,
+            status: 'OPENING_SOON',
+            message: 'Market opens at 9:15 AM IST',
+            nextOpen: getNextMarketOpen(now)
+        };
+    } else if (currentTime >= marketOpen && currentTime <= marketClose) {
+        return {
+            isOpen: true,
+            status: 'OPEN',
+            message: 'Market is open for trading',
+            closesAt: '3:30 PM IST'
+        };
+    } else if (currentTime > marketClose && currentTime < postMarket) {
+        return {
+            isOpen: false,
+            status: 'POST_MARKET',
+            message: 'Post-market period',
+            nextOpen: getNextMarketOpen(now)
+        };
+    } else {
+        return {
+            isOpen: false,
+            status: 'CLOSED',
+            message: 'Market is closed',
+            nextOpen: getNextMarketOpen(now)
+        };
+    }
+};
 
-// Market holidays 2025 (BSE/NSE)
-const MARKET_HOLIDAYS_2025 = [
+const getNextMarketOpen = (currentDate) => {
+    const now = currentDate || getISTTime();
+    let nextDay = new Date(now);
+    nextDay.setDate(nextDay.getDate() + 1);
+    nextDay.setHours(9, 15, 0, 0);
+    
+    // Skip weekends
+    while (nextDay.getDay() === 0 || nextDay.getDay() === 6) {
+        nextDay.setDate(nextDay.getDate() + 1);
+    }
+    
+    return nextDay.toLocaleString('en-IN', { 
+        timeZone: 'Asia/Kolkata',
+        dateStyle: 'medium', 
+        timeStyle: 'short' 
+    });
+};
+
+// Holiday list for 2025 (BSE/NSE)
+const marketHolidays2025 = [
     '2025-01-26', // Republic Day
+    '2025-03-14', // Holi
     '2025-03-31', // Id-Ul-Fitr
     '2025-04-10', // Mahavir Jayanti
+    '2025-04-14', // Dr. Ambedkar Jayanti
     '2025-04-18', // Good Friday
     '2025-05-01', // Maharashtra Day
     '2025-06-07', // Id-Ul-Adha (Bakri Id)
-    '2025-07-06', // Muharram
+    '2025-07-07', // Muharram
     '2025-08-15', // Independence Day
     '2025-08-27', // Ganesh Chaturthi
-    '2025-10-02', // Gandhi Jayanti
-    '2025-10-02', // Dussehra
-    '2025-10-21', // Diwali Laxmi Pujan
-    '2025-10-22', // Diwali Balipratipada
+    '2025-10-02', // Mahatma Gandhi Jayanti
+    '2025-10-12', // Dussehra
+    '2025-10-20', // Diwali Laxmi Pujan
+    '2025-10-21', // Diwali Balipratipada
     '2025-11-05', // Guru Nanak Jayanti
     '2025-12-25', // Christmas
 ];
 
-/**
- * Check if market is currently open
- */
-function isMarketOpen() {
-    const now = new Date();
-    const istTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+const isMarketHoliday = (date = getISTTime()) => {
+    const dateStr = date.toISOString().split('T')[0];
+    return marketHolidays2025.includes(dateStr);
+};
+
+const getMarketStatusWithHolidays = () => {
+    const now = getISTTime();
     
-    const day = istTime.getDay(); // 0 = Sunday, 6 = Saturday
-    const hour = istTime.getHours();
-    const minute = istTime.getMinutes();
-    
-    // Check if weekend
-    if (day === 0 || day === 6) {
-        return { isOpen: false, reason: 'Market closed on weekends' };
-    }
-    
-    // Check if holiday
-    const dateStr = istTime.toISOString().split('T')[0];
-    if (MARKET_HOLIDAYS_2025.includes(dateStr)) {
-        return { isOpen: false, reason: 'Market holiday' };
-    }
-    
-    // Convert current time to minutes for comparison
-    const currentMinutes = hour * 60 + minute;
-    const openMinutes = MARKET_OPEN_HOUR * 60 + MARKET_OPEN_MINUTE;
-    const closeMinutes = MARKET_CLOSE_HOUR * 60 + MARKET_CLOSE_MINUTE;
-    
-    // Check if within trading hours (9:15 AM - 3:30 PM)
-    if (currentMinutes >= openMinutes && currentMinutes < closeMinutes) {
-        return { 
-            isOpen: true, 
-            message: 'Market is open for trading',
-            closesAt: `${MARKET_CLOSE_HOUR}:${MARKET_CLOSE_MINUTE.toString().padStart(2, '0')} PM IST`
+    // Check for holidays first
+    if (isMarketHoliday(now)) {
+        return {
+            isOpen: false,
+            status: 'HOLIDAY',
+            message: 'Market is closed for a holiday',
+            nextOpen: getNextMarketOpen(now)
         };
     }
     
-    // Market closed
-    if (currentMinutes < openMinutes) {
-        return { 
-            isOpen: false, 
-            reason: 'Market not yet opened',
-            opensAt: `${MARKET_OPEN_HOUR}:${MARKET_OPEN_MINUTE.toString().padStart(2, '0')} AM IST`
-        };
-    }
-    
-    return { 
-        isOpen: false, 
-        reason: 'Market closed for the day',
-        opensAt: 'Tomorrow at 9:15 AM IST'
-    };
-}
-
-/**
- * Check if in pre-market hours (9:00 AM - 9:15 AM)
- */
-function isPreMarket() {
-    const now = new Date();
-    const istTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
-    
-    const day = istTime.getDay();
-    const hour = istTime.getHours();
-    const minute = istTime.getMinutes();
-    
-    if (day === 0 || day === 6) return false;
-    
-    const dateStr = istTime.toISOString().split('T')[0];
-    if (MARKET_HOLIDAYS_2025.includes(dateStr)) return false;
-    
-    const currentMinutes = hour * 60 + minute;
-    const preMarketStart = PREMARKET_OPEN_HOUR * 60 + PREMARKET_OPEN_MINUTE;
-    const marketOpen = MARKET_OPEN_HOUR * 60 + MARKET_OPEN_MINUTE;
-    
-    return currentMinutes >= preMarketStart && currentMinutes < marketOpen;
-}
-
-/**
- * Get next market open time
- */
-function getNextMarketOpen() {
-    const now = new Date();
-    const istTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
-    
-    let nextOpen = new Date(istTime);
-    nextOpen.setHours(MARKET_OPEN_HOUR, MARKET_OPEN_MINUTE, 0, 0);
-    
-    // If market already opened today or it's after closing, move to next day
-    const currentMinutes = istTime.getHours() * 60 + istTime.getMinutes();
-    const openMinutes = MARKET_OPEN_HOUR * 60 + MARKET_OPEN_MINUTE;
-    
-    if (currentMinutes >= openMinutes) {
-        nextOpen.setDate(nextOpen.getDate() + 1);
-    }
-    
-    // Skip weekends
-    while (nextOpen.getDay() === 0 || nextOpen.getDay() === 6) {
-        nextOpen.setDate(nextOpen.getDate() + 1);
-    }
-    
-    // Skip holidays
-    let dateStr = nextOpen.toISOString().split('T')[0];
-    while (MARKET_HOLIDAYS_2025.includes(dateStr)) {
-        nextOpen.setDate(nextOpen.getDate() + 1);
-        // Skip weekend after holiday
-        while (nextOpen.getDay() === 0 || nextOpen.getDay() === 6) {
-            nextOpen.setDate(nextOpen.getDate() + 1);
-        }
-        dateStr = nextOpen.toISOString().split('T')[0];
-    }
-    
-    return nextOpen;
-}
-
-/**
- * Get market status message for display
- */
-function getMarketStatus() {
-    const status = isMarketOpen();
-    const now = new Date();
-    const istTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
-    
-    return {
-        isOpen: status.isOpen,
-        status: status.isOpen ? 'OPEN' : 'CLOSED',
-        message: status.message || status.reason,
-        currentTime: istTime.toLocaleTimeString('en-IN', { 
-            hour: '2-digit', 
-            minute: '2-digit',
-            hour12: true 
-        }),
-        nextOpen: status.isOpen ? null : (status.opensAt || getNextMarketOpen().toLocaleString('en-IN')),
-        isPreMarket: isPreMarket(),
-        tradingHours: '9:15 AM - 3:30 PM IST'
-    };
-}
-
-/**
- * Check if trading is allowed (for testing, can override)
- */
-function canTrade() {
-    // For development/testing, check environment variable
-    if (process.env.DISABLE_MARKET_HOURS === 'true') {
-        return { allowed: true, message: 'Market hours check disabled (dev mode)' };
-    }
-    
-    const status = isMarketOpen();
-    
-    if (status.isOpen) {
-        return { allowed: true, message: 'Trading allowed' };
-    }
-    
-    return { 
-        allowed: false, 
-        message: status.reason,
-        details: `Market opens at ${status.opensAt || '9:15 AM IST'}`
-    };
-}
+    return getMarketStatus();
+};
 
 module.exports = {
     isMarketOpen,
-    isPreMarket,
-    getNextMarketOpen,
-    getMarketStatus,
-    canTrade,
-    MARKET_HOLIDAYS_2025
+    getMarketStatus: getMarketStatusWithHolidays,
+    isMarketHoliday,
+    getISTTime // Export for testing
 };
