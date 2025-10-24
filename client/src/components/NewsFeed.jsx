@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { fetchMarketNews } from '../services/newsService';
+import { useState, useEffect, useCallback } from 'react';
+import { fetchMarketNews } from '../services/news';
 import { Newspaper, ExternalLink, Clock, RefreshCw } from 'lucide-react';
 
 const NewsFeed = () => {
@@ -7,26 +7,26 @@ const NewsFeed = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    useEffect(() => {
-        loadNews();
-        // Auto-refresh every 30 minutes
-        const interval = setInterval(loadNews, 1800000);
-        return () => clearInterval(interval);
-    }, []);
-
-    const loadNews = async () => {
+    const loadNews = useCallback(async () => {
         try {
             setLoading(true);
             const data = await fetchMarketNews(5); // Get only 5 articles for widget
             setNews(data.news || []);
             setError(null);
-        } catch (error) {
-            console.error('Failed to fetch news:', error);
+        } catch (err) {
+            console.error('Failed to fetch news:', err);
             setError('Unable to load news');
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        loadNews();
+        // Auto-refresh every 30 minutes
+        const interval = setInterval(loadNews, 1800000);
+        return () => clearInterval(interval);
+    }, [loadNews]);
 
     const getTimeAgo = (dateString) => {
         const date = new Date(dateString);
@@ -113,6 +113,7 @@ const NewsFeed = () => {
                         onClick={loadNews}
                         className="p-1 hover:bg-slate-800/50 rounded transition-colors"
                         title="Refresh news"
+                        aria-label="Refresh news"
                     >
                         <RefreshCw className="w-4 h-4 text-slate-400 hover:text-white" />
                     </button>
@@ -120,10 +121,10 @@ const NewsFeed = () => {
             </div>
 
             {/* News List */}
-            <div className="divide-y divide-slate-800/50 max-h-96 overflow-y-auto">
+            <div className="divide-y divide-slate-800/50 max-h-96 overflow-y-auto scrollbar-hide">
                 {news.map((article, index) => (
                     <a
-                        key={index}
+                        key={`${article.url}-${index}`}
                         href={article.url}
                         target="_blank"
                         rel="noopener noreferrer"

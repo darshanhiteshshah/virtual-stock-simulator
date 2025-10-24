@@ -46,10 +46,10 @@ const Sidebar = () => {
 
     return (
         <>
-            {/* Mobile Menu Button - Fixed Position */}
+            {/* Mobile Menu Button */}
             <button
                 onClick={() => setIsMobileOpen(!isMobileOpen)}
-                className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-slate-900 rounded-lg text-white border border-slate-800 shadow-lg"
+                className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-slate-900 rounded-lg text-white border border-slate-800 shadow-lg hover:bg-slate-800 transition-colors"
             >
                 {isMobileOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
@@ -57,12 +57,12 @@ const Sidebar = () => {
             {/* Mobile Overlay */}
             {isMobileOpen && (
                 <div 
-                    className="lg:hidden fixed inset-0 bg-black/50 z-40"
+                    className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
                     onClick={() => setIsMobileOpen(false)}
                 />
             )}
 
-            {/* Sidebar Container */}
+            {/* Sidebar */}
             <aside 
                 className={`
                     ${isCollapsed ? 'w-20' : 'w-64'} 
@@ -71,15 +71,18 @@ const Sidebar = () => {
                     flex flex-col 
                     transition-all duration-300 ease-in-out
                     h-screen
-                    fixed lg:relative
+                    flex-shrink-0
+                    fixed lg:static
+                    top-0 left-0
                     z-40
                     ${isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+                    overflow-hidden
                 `}
             >
-                {/* Header */}
+                {/* Header - Fixed */}
                 <div className="p-6 border-b border-slate-800/50 flex items-center justify-between flex-shrink-0">
                     {!isCollapsed && (
-                        <div>
+                        <div className="flex-1">
                             <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
                                 VSM
                             </h1>
@@ -98,7 +101,7 @@ const Sidebar = () => {
                     {/* Toggle Button - Desktop Only */}
                     <button
                         onClick={() => setIsCollapsed(!isCollapsed)}
-                        className="hidden lg:flex items-center justify-center w-8 h-8 rounded-lg hover:bg-slate-800/50 text-slate-400 hover:text-white transition-colors"
+                        className="hidden lg:flex items-center justify-center w-8 h-8 rounded-lg hover:bg-slate-800/50 text-slate-400 hover:text-white transition-colors flex-shrink-0"
                     >
                         <ChevronLeft 
                             size={18} 
@@ -107,8 +110,21 @@ const Sidebar = () => {
                     </button>
                 </div>
 
-                {/* Navigation - Scrollable */}
-                <nav className="flex flex-col gap-1 p-4 flex-1 overflow-y-auto">
+                {/* Navigation - Scrollable WITHOUT visible scrollbar */}
+                <nav 
+                    className="flex flex-col gap-1 p-4 flex-1 overflow-y-auto"
+                    style={{
+                        /* Hide scrollbar for Chrome, Safari and Opera */
+                        scrollbarWidth: 'none', /* Firefox */
+                        msOverflowStyle: 'none', /* IE and Edge */
+                    }}
+                >
+                    <style>{`
+                        nav::-webkit-scrollbar {
+                            display: none; /* Chrome, Safari, Opera */
+                        }
+                    `}</style>
+
                     {/* Primary Navigation */}
                     {navigationItems.map((item) => {
                         const Icon = item.icon;
@@ -124,7 +140,7 @@ const Sidebar = () => {
                                 <Icon size={20} className="flex-shrink-0" />
                                 {!isCollapsed && <span>{item.label}</span>}
                                 
-                                {/* Tooltip for collapsed state */}
+                                {/* Tooltip */}
                                 {isCollapsed && (
                                     <div className="absolute left-full ml-2 px-3 py-2 bg-slate-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap shadow-xl border border-slate-700 transition-opacity z-50">
                                         {item.label}
@@ -135,7 +151,7 @@ const Sidebar = () => {
                     })}
 
                     {/* Divider */}
-                    <div className="my-3 border-t border-slate-800/50"></div>
+                    <div className="my-2 border-t border-slate-800/50"></div>
 
                     {/* Secondary Navigation */}
                     {secondaryItems.map((item) => {
@@ -152,7 +168,7 @@ const Sidebar = () => {
                                 <Icon size={20} className="flex-shrink-0" />
                                 {!isCollapsed && <span>{item.label}</span>}
                                 
-                                {/* Tooltip for collapsed state */}
+                                {/* Tooltip */}
                                 {isCollapsed && (
                                     <div className="absolute left-full ml-2 px-3 py-2 bg-slate-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap shadow-xl border border-slate-700 transition-opacity z-50">
                                         {item.label}
@@ -163,7 +179,7 @@ const Sidebar = () => {
                     })}
                 </nav>
 
-                {/* Footer - User Info */}
+                {/* Footer - Fixed */}
                 <div className="p-4 border-t border-slate-800/50 flex-shrink-0">
                     {!isCollapsed ? (
                         <div className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-lg p-3 border border-slate-700/50">

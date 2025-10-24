@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { fetchStockNews } from '../services/newsService';
+import { useState, useEffect, useCallback } from 'react';
+import { fetchStockNews } from '../services/news';
 import { Newspaper, ExternalLink, Clock } from 'lucide-react';
 
 const StockNews = ({ symbol }) => {
@@ -7,25 +7,25 @@ const StockNews = ({ symbol }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    useEffect(() => {
-        if (symbol) {
-            loadNews();
-        }
-    }, [symbol]);
-
-    const loadNews = async () => {
+    const loadNews = useCallback(async () => {
+        if (!symbol) return;
+        
         try {
             setLoading(true);
             const data = await fetchStockNews(symbol, 5);
             setNews(data.news || []);
             setError(null);
-        } catch (error) {
-            console.error(`Failed to fetch news for ${symbol}:`, error);
+        } catch (err) {
+            console.error(`Failed to fetch news for ${symbol}:`, err);
             setError('No news available');
         } finally {
             setLoading(false);
         }
-    };
+    }, [symbol]);
+
+    useEffect(() => {
+        loadNews();
+    }, [loadNews]);
 
     const getTimeAgo = (dateString) => {
         const date = new Date(dateString);
@@ -78,7 +78,7 @@ const StockNews = ({ symbol }) => {
             <div className="space-y-3">
                 {news.map((article, index) => (
                     <a
-                        key={index}
+                        key={`${article.url}-${index}`}
                         href={article.url}
                         target="_blank"
                         rel="noopener noreferrer"

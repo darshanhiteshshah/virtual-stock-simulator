@@ -1,30 +1,30 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { fetchMarketNews } from '../services/newsService';
+import { Newspaper, RefreshCw, User, Clock, ExternalLink } from 'lucide-react';
 
 const News = () => {
     const [news, setNews] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [filter, setFilter] = useState('all');
     const [limit, setLimit] = useState(20);
 
-    useEffect(() => {
-        fetchNews();
-    }, [limit]);
-
-    const fetchNews = async () => {
+    const fetchNews = useCallback(async () => {
         try {
             setLoading(true);
             const data = await fetchMarketNews(limit);
             setNews(data.news || []);
             setError(null);
-            setLoading(false);
-        } catch (error) {
-            console.error('Failed to fetch news:', error);
-            setError(error.response?.data?.message || 'Failed to load news');
+        } catch (err) {
+            console.error('Failed to fetch news:', err);
+            setError(err.response?.data?.message || 'Failed to load news');
+        } finally {
             setLoading(false);
         }
-    };
+    }, [limit]);
+
+    useEffect(() => {
+        fetchNews();
+    }, [fetchNews]);
 
     const getTimeAgo = (dateString) => {
         const date = new Date(dateString);
@@ -48,98 +48,56 @@ const News = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-950">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-teal-600 to-teal-700 border-b border-gray-800">
-                <div className="max-w-6xl mx-auto px-6 py-8">
-                    <div className="flex items-center space-x-3 mb-4">
-                        <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
-                        </svg>
+        <div className="w-full overflow-x-hidden min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4 md:p-6">
+            <div className="w-full max-w-6xl mx-auto space-y-6">
+                
+                {/* Header */}
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex items-center space-x-3">
+                        <Newspaper className="w-8 h-8 text-slate-400 flex-shrink-0" />
                         <div>
-                            <h1 className="text-4xl font-bold text-white">Market News</h1>
-                            <p className="text-teal-100 text-sm">Stay updated with the latest market trends and analysis</p>
+                            <h1 className="text-2xl md:text-3xl font-bold text-white">Market News</h1>
+                            <p className="text-slate-400 text-xs md:text-sm">Stay updated with the latest market trends</p>
                         </div>
-                    </div>
-
-                    {/* Stats Bar */}
-                    <div className="flex items-center space-x-6 text-sm">
-                        <div className="flex items-center space-x-2 text-white bg-white/10 px-3 py-1 rounded-lg">
-                            <span className="relative flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-300 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-400"></span>
-                            </span>
-                            <span>Live Updates</span>
-                        </div>
-                        <span className="text-teal-100">
-                            {news.length} articles loaded
-                        </span>
-                    </div>
-                </div>
-            </div>
-
-            {/* Main Content */}
-            <div className="max-w-6xl mx-auto px-6 py-8">
-
-                {/* Filter Tabs */}
-                <div className="flex items-center justify-between mb-8">
-                    <div className="flex space-x-2">
-                        <button 
-                            onClick={() => setFilter('all')}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                                filter === 'all' 
-                                    ? 'bg-teal-600 text-white' 
-                                    : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'
-                            }`}
-                        >
-                            All News
-                        </button>
-                        <button 
-                            onClick={() => setFilter('stocks')}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                                filter === 'stocks' 
-                                    ? 'bg-teal-600 text-white' 
-                                    : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'
-                            }`}
-                        >
-                            📈 Stocks
-                        </button>
-                        <button 
-                            onClick={() => setFilter('market')}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                                filter === 'market' 
-                                    ? 'bg-teal-600 text-white' 
-                                    : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'
-                            }`}
-                        >
-                            💹 Market
-                        </button>
                     </div>
 
                     {/* Refresh Button */}
                     <button 
                         onClick={fetchNews}
-                        className="flex items-center space-x-2 px-4 py-2 bg-gray-800 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors"
+                        disabled={loading}
+                        className="flex items-center space-x-2 px-4 py-2 bg-slate-800/50 hover:bg-slate-800 text-slate-300 rounded-lg transition-colors border border-slate-700/50 disabled:opacity-50 flex-shrink-0"
                     >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
-                        <span className="text-sm">Refresh</span>
+                        <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                        <span className="text-sm font-medium">Refresh</span>
                     </button>
+                </div>
+
+                {/* Stats */}
+                <div className="flex flex-wrap items-center gap-3 text-sm">
+                    <div className="flex items-center space-x-2 bg-slate-800/50 px-3 py-1.5 rounded-lg border border-slate-700/50">
+                        <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-300 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-400"></span>
+                        </span>
+                        <span className="text-slate-300">Live Updates</span>
+                    </div>
+                    <span className="text-slate-400">
+                        {news.length} articles loaded
+                    </span>
                 </div>
 
                 {/* Loading State */}
                 {loading && (
                     <div className="space-y-6">
                         {[...Array(5)].map((_, i) => (
-                            <div key={i} className="bg-gray-900 rounded-xl p-6 border border-gray-800 animate-pulse">
-                                <div className="flex space-x-4">
-                                    <div className="w-48 h-32 bg-gray-800 rounded-lg flex-shrink-0"></div>
+                            <div key={i} className="bg-slate-900/50 rounded-xl p-6 border border-slate-800/50 animate-pulse backdrop-blur-xl">
+                                <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
+                                    <div className="w-full md:w-48 h-32 bg-slate-800 rounded-lg flex-shrink-0"></div>
                                     <div className="flex-1 space-y-3">
-                                        <div className="h-6 bg-gray-800 rounded w-3/4"></div>
-                                        <div className="h-4 bg-gray-800 rounded w-full"></div>
-                                        <div className="h-4 bg-gray-800 rounded w-2/3"></div>
-                                        <div className="h-4 bg-gray-800 rounded w-1/4"></div>
+                                        <div className="h-6 bg-slate-800 rounded w-3/4"></div>
+                                        <div className="h-4 bg-slate-800 rounded w-full"></div>
+                                        <div className="h-4 bg-slate-800 rounded w-2/3"></div>
+                                        <div className="h-4 bg-slate-800 rounded w-1/4"></div>
                                     </div>
                                 </div>
                             </div>
@@ -149,15 +107,15 @@ const News = () => {
 
                 {/* Error State */}
                 {error && !loading && (
-                    <div className="bg-gray-900 rounded-xl p-12 border border-gray-800 text-center">
-                        <svg className="w-16 h-16 text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <h3 className="text-xl font-bold text-gray-300 mb-2">Unable to Load News</h3>
-                        <p className="text-gray-500 mb-6">{error}</p>
+                    <div className="bg-slate-900/50 rounded-xl p-12 border border-slate-800/50 text-center backdrop-blur-xl">
+                        <div className="w-16 h-16 bg-slate-800/50 rounded-full mx-auto mb-4 flex items-center justify-center">
+                            <Newspaper className="w-8 h-8 text-slate-600" />
+                        </div>
+                        <h3 className="text-xl font-bold text-slate-300 mb-2">Unable to Load News</h3>
+                        <p className="text-slate-500 mb-6">{error}</p>
                         <button 
                             onClick={fetchNews}
-                            className="px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+                            className="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-colors font-medium"
                         >
                             Try Again
                         </button>
@@ -169,69 +127,61 @@ const News = () => {
                     <div className="space-y-6">
                         {news.map((article, index) => (
                             <a
-                                key={index}
+                                key={`${article.url}-${index}`}
                                 href={article.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="block bg-gray-900 rounded-xl border border-gray-800 hover:border-teal-600/50 transition-all overflow-hidden group"
+                                className="block bg-slate-900/50 rounded-xl border border-slate-800/50 hover:border-slate-700 transition-all overflow-hidden group backdrop-blur-xl"
                             >
                                 <div className="flex flex-col md:flex-row">
                                     {/* Article Image */}
                                     {article.imageUrl && (
-                                        <div className="md:w-64 h-48 md:h-auto flex-shrink-0 bg-gray-800 overflow-hidden">
+                                        <div className="w-full md:w-64 h-48 md:h-auto flex-shrink-0 bg-slate-800 overflow-hidden">
                                             <img 
                                                 src={article.imageUrl} 
                                                 alt={article.headline}
                                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                                 onError={(e) => {
                                                     e.target.style.display = 'none';
-                                                    e.target.parentElement.style.display = 'none';
+                                                    if (e.target.parentElement) {
+                                                        e.target.parentElement.style.display = 'none';
+                                                    }
                                                 }}
                                             />
                                         </div>
                                     )}
 
                                     {/* Article Content */}
-                                    <div className="flex-1 p-6">
+                                    <div className="flex-1 p-4 md:p-6">
                                         <div className="flex items-start justify-between mb-3">
-                                            <div>
-                                                <span className="inline-block px-3 py-1 bg-teal-600/10 text-teal-400 text-xs font-semibold rounded-full mb-2">
-                                                    {article.source}
-                                                </span>
-                                            </div>
-                                            <svg className="w-5 h-5 text-gray-600 group-hover:text-teal-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                            </svg>
+                                            <span className="inline-block px-3 py-1 bg-slate-800/50 text-slate-400 text-xs font-semibold rounded-full border border-slate-700/50">
+                                                {article.source}
+                                            </span>
+                                            <ExternalLink className="w-5 h-5 text-slate-600 group-hover:text-slate-400 transition-colors flex-shrink-0" />
                                         </div>
 
-                                        <h2 className="text-xl font-bold text-gray-100 group-hover:text-teal-400 transition-colors mb-3 line-clamp-2">
+                                        <h2 className="text-lg md:text-xl font-bold text-slate-100 group-hover:text-white transition-colors mb-3 line-clamp-2">
                                             {article.headline}
                                         </h2>
 
                                         {article.description && (
-                                            <p className="text-gray-400 text-sm leading-relaxed mb-4 line-clamp-3">
+                                            <p className="text-slate-400 text-sm leading-relaxed mb-4 line-clamp-3">
                                                 {article.description}
                                             </p>
                                         )}
 
-                                        <div className="flex items-center justify-between text-xs text-gray-500">
-                                            <div className="flex items-center space-x-4">
-                                                {article.author && (
-                                                    <span className="flex items-center space-x-1">
-                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                                        </svg>
-                                                        <span>{article.author}</span>
-                                                    </span>
-                                                )}
+                                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-500">
+                                            {article.author && (
                                                 <span className="flex items-center space-x-1">
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                    </svg>
-                                                    <span>{getTimeAgo(article.publishedAt)}</span>
+                                                    <User className="w-3 h-3" />
+                                                    <span className="truncate max-w-[150px]">{article.author}</span>
                                                 </span>
-                                            </div>
-                                            <span className="text-xs text-gray-600">
+                                            )}
+                                            <span className="flex items-center space-x-1">
+                                                <Clock className="w-3 h-3" />
+                                                <span>{getTimeAgo(article.publishedAt)}</span>
+                                            </span>
+                                            <span className="text-xs text-slate-600 hidden md:inline">
                                                 {formatDate(article.publishedAt)}
                                             </span>
                                         </div>
@@ -247,7 +197,7 @@ const News = () => {
                     <div className="mt-8 text-center">
                         <button 
                             onClick={() => setLimit(limit + 10)}
-                            className="px-8 py-3 bg-gray-800 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors font-medium"
+                            className="w-full md:w-auto px-8 py-3 bg-slate-800/50 text-slate-300 rounded-lg hover:bg-slate-800 transition-colors font-medium border border-slate-700/50"
                         >
                             Load More Articles
                         </button>
@@ -256,12 +206,10 @@ const News = () => {
 
                 {/* Empty State */}
                 {!loading && !error && news.length === 0 && (
-                    <div className="bg-gray-900 rounded-xl p-12 border border-gray-800 text-center">
-                        <svg className="w-20 h-20 text-gray-700 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
-                        </svg>
-                        <h3 className="text-xl font-bold text-gray-400 mb-2">No News Available</h3>
-                        <p className="text-gray-500">Check back later for updates</p>
+                    <div className="bg-slate-900/50 rounded-xl p-12 border border-slate-800/50 text-center backdrop-blur-xl">
+                        <Newspaper className="w-20 h-20 text-slate-700 mx-auto mb-4" />
+                        <h3 className="text-xl font-bold text-slate-400 mb-2">No News Available</h3>
+                        <p className="text-slate-500">Check back later for updates</p>
                     </div>
                 )}
             </div>
