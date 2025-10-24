@@ -20,7 +20,6 @@ const POSTMARKET_CLOSE_MINUTE = 0;
 // Market holidays 2025 (BSE/NSE)
 const MARKET_HOLIDAYS_2025 = [
     '2025-01-26', // Republic Day
-    '2025-03-14', // Holi
     '2025-03-31', // Id-Ul-Fitr
     '2025-04-10', // Mahavir Jayanti
     '2025-04-18', // Good Friday
