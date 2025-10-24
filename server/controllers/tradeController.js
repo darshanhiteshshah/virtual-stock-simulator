@@ -4,7 +4,9 @@ const Transaction = require('../models/Transaction');
 const PendingOrder = require('../models/PendingOrder');
 const { sendTransactionEmail } = require('../utils/emailService');
 const { addTradeToFeed } = require('../utils/tradefeedService'); // ADD THIS
-const { canTrade } = require('../utils/marketHours');
+const { canTrade, getMarketStatus } = require('../utils/marketHours');
+// Added getMarketStatus to get detailed error message
+
 
 
 /**
@@ -26,15 +28,16 @@ const buyStock = async (req, res) => {
             });
         }
 
-        // ✅ ADD THIS: Check market hours
-const tradeCheck = canTrade();
-if (!tradeCheck.allowed) {
+// Check market hours
+if (!canTrade()) {  // ✅ Correct: boolean check
+    const marketStatus = getMarketStatus();  // ✅ Get details separately
     return res.status(403).json({
         message: 'Trading not allowed at this time',
-        reason: tradeCheck.message,
-        details: tradeCheck.details
+        reason: marketStatus.message,
+        status: marketStatus.status
     });
 }
+
 
         // Get current stock price
         let stockData;
@@ -177,15 +180,16 @@ const sellStock = async (req, res) => {
             });
         }
 
-        // ✅ ADD THIS: Check market hours
-const tradeCheck = canTrade();
-if (!tradeCheck.allowed) {
+// Check market hours
+if (!canTrade()) {  // ✅ Boolean check
+    const marketStatus = getMarketStatus();
     return res.status(403).json({
         message: 'Trading not allowed at this time',
-        reason: tradeCheck.message,
-        details: tradeCheck.details
+        reason: marketStatus.message,
+        status: marketStatus.status
     });
 }
+
 
         // Get current stock price
         let stockData;

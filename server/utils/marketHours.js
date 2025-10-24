@@ -38,6 +38,25 @@ const isMarketOpen = () => {
     return currentTime >= marketOpen && currentTime <= marketClose;
 };
 
+// ✅ ADD THIS FUNCTION - Required for trade controller
+const canTrade = () => {
+    // For development: allow trading anytime
+    if (process.env.NODE_ENV === 'development' || process.env.ALLOW_TRADING_ANYTIME === 'true') {
+        return true;
+    }
+    
+    // For production: check market hours and holidays
+    const now = getISTTime();
+    
+    // Check if today is a holiday
+    if (isMarketHoliday(now)) {
+        return false;
+    }
+    
+    // Check if market is open
+    return isMarketOpen();
+};
+
 const getMarketStatus = () => {
     const now = getISTTime();
     const day = now.getDay();
@@ -105,8 +124,8 @@ const getNextMarketOpen = (currentDate) => {
     nextDay.setDate(nextDay.getDate() + 1);
     nextDay.setHours(9, 15, 0, 0);
     
-    // Skip weekends
-    while (nextDay.getDay() === 0 || nextDay.getDay() === 6) {
+    // Skip weekends and holidays
+    while (nextDay.getDay() === 0 || nextDay.getDay() === 6 || isMarketHoliday(nextDay)) {
         nextDay.setDate(nextDay.getDate() + 1);
     }
     
@@ -163,5 +182,6 @@ module.exports = {
     isMarketOpen,
     getMarketStatus: getMarketStatusWithHolidays,
     isMarketHoliday,
-    getISTTime // Export for testing
+    getISTTime,
+    canTrade  // ✅ EXPORT THIS - Required by trade controller
 };
