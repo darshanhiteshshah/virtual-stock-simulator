@@ -191,27 +191,27 @@ const Trade = () => {
     }
 
     return (
-        <div className="min-h-screen bg-slate-950 text-white p-6">
-            <div className="max-w-7xl mx-auto space-y-4">
+        <div className="min-h-screen bg-slate-950 text-white p-3 sm:p-4 md:p-6 overflow-x-hidden">
+            <div className="max-w-7xl mx-auto space-y-3 sm:space-y-4">
                 {/* Header */}
-                <div className="border-b border-slate-800 pb-4">
-                    <h1 className="text-2xl font-bold">Live Trading</h1>
-                    <p className="text-sm text-slate-400 mt-1">Real-time trading with Yahoo Finance BSE data</p>
+                <div className="border-b border-slate-800 pb-3 sm:pb-4">
+                    <h1 className="text-xl sm:text-2xl font-bold">Live Trading</h1>
+                    <p className="text-xs sm:text-sm text-slate-400 mt-1">Real-time trading with Yahoo Finance BSE data</p>
                 </div>
 
                 {/* Wallet & Stock Selector Row */}
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-slate-900 border border-slate-800 rounded p-4">
-                        <div className="text-sm text-slate-400 mb-1">Wallet Balance</div>
-                        <div className="text-2xl font-bold text-emerald-400">{formatCurrency(walletBalance)}</div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                    <div className="bg-slate-900 border border-slate-800 rounded p-3 sm:p-4">
+                        <div className="text-xs sm:text-sm text-slate-400 mb-1">Wallet Balance</div>
+                        <div className="text-xl sm:text-2xl font-bold text-emerald-400">{formatCurrency(walletBalance)}</div>
                     </div>
-                    <div className="bg-slate-900 border border-slate-800 rounded p-4">
-                        <label className="text-sm text-slate-400 block mb-2">Select Stock</label>
+                    <div className="bg-slate-900 border border-slate-800 rounded p-3 sm:p-4">
+                        <label className="text-xs sm:text-sm text-slate-400 block mb-2">Select Stock</label>
                         <div className="flex gap-2">
                             <select
                                 value={symbol}
                                 onChange={(e) => setSymbol(e.target.value)}
-                                className="flex-1 bg-slate-800 border border-slate-700 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                                className="flex-1 min-w-0 bg-slate-800 border border-slate-700 rounded px-2 sm:px-3 py-2 text-sm sm:text-base text-white focus:outline-none focus:border-blue-500"
                                 disabled={pricesLoading}
                             >
                                 {pricesLoading ? (
@@ -229,7 +229,7 @@ const Trade = () => {
                             <button
                                 onClick={handleAddToWatchlist}
                                 disabled={isInWatchlist}
-                                className={`px-3 py-2 rounded transition-colors flex items-center gap-2 ${
+                                className={`px-2 sm:px-3 py-2 rounded transition-colors flex items-center gap-1 sm:gap-2 flex-shrink-0 ${
                                     isInWatchlist
                                         ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
                                         : 'bg-blue-600 hover:bg-blue-500 text-white'
@@ -237,64 +237,67 @@ const Trade = () => {
                                 title={isInWatchlist ? 'Already in watchlist' : 'Add to watchlist'}
                             >
                                 <Star className={`w-4 h-4 ${isInWatchlist ? 'fill-yellow-400 text-yellow-400' : ''}`} />
-                                <span className="hidden sm:inline">{isInWatchlist ? 'Added' : 'Watch'}</span>
+                                <span className="hidden sm:inline text-sm">{isInWatchlist ? 'Added' : 'Watch'}</span>
                             </button>
                         </div>
                     </div>
                 </div>
 
                 {stockData && (
-                    <div className="grid grid-cols-3 gap-4">
-                        {/* Left: Chart */}
-                        <div className="col-span-2 space-y-4">
-                            <div className="bg-slate-900 border border-slate-800 rounded p-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
+                        {/* Left: Chart - Full width on mobile, 2/3 on desktop */}
+                        <div className="lg:col-span-2 space-y-3 sm:space-y-4">
+                            <div className="bg-slate-900 border border-slate-800 rounded p-3 sm:p-4">
                                 <StockCard {...stockData} />
                                 
-                                <div className="flex gap-2 mt-4 mb-4">
+                                <div className="flex gap-2 mt-3 sm:mt-4 mb-3 sm:mb-4">
                                     <button 
                                         onClick={() => setChartType('line')}
-                                        className={`px-4 py-2 rounded text-sm ${chartType === 'line' ? 'bg-blue-600' : 'bg-slate-800 hover:bg-slate-700'}`}
+                                        className={`px-3 sm:px-4 py-2 rounded text-xs sm:text-sm ${chartType === 'line' ? 'bg-blue-600' : 'bg-slate-800 hover:bg-slate-700'}`}
                                     >
                                         Line Chart
                                     </button>
                                     <button 
                                         onClick={() => setChartType('candlestick')}
-                                        className={`px-4 py-2 rounded text-sm ${chartType === 'candlestick' ? 'bg-blue-600' : 'bg-slate-800 hover:bg-slate-700'}`}
+                                        className={`px-3 sm:px-4 py-2 rounded text-xs sm:text-sm ${chartType === 'candlestick' ? 'bg-blue-600' : 'bg-slate-800 hover:bg-slate-700'}`}
                                     >
                                         Candlestick
                                     </button>
                                 </div>
 
                                 {historyLoading ? (
-                                    <div className="h-80 bg-slate-800 rounded"></div>
+                                    <div className="h-64 sm:h-80 bg-slate-800 rounded"></div>
                                 ) : (
-                                    chartType === 'line' ? 
-                                        <StockChart data={historyData} symbol={symbol} /> :
-                                        <CandlestickChart data={historyData} />
+                                    <div className="w-full overflow-hidden">
+                                        {chartType === 'line' ? 
+                                            <StockChart data={historyData} symbol={symbol} /> :
+                                            <CandlestickChart data={historyData} />
+                                        }
+                                    </div>
                                 )}
                             </div>
 
                             <StockDetails stockData={stockData} />
                         </div>
 
-                        {/* Right: Trading */}
-                        <div className="space-y-4">
+                        {/* Right: Trading - Full width on mobile, 1/3 on desktop */}
+                        <div className="space-y-3 sm:space-y-4">
                             {/* Holdings */}
-                            <div className="bg-slate-900 border border-slate-800 rounded p-4">
-                                <div className="text-sm text-slate-400 mb-2">Your Holdings</div>
-                                <div className="text-2xl font-bold text-blue-400">
+                            <div className="bg-slate-900 border border-slate-800 rounded p-3 sm:p-4">
+                                <div className="text-xs sm:text-sm text-slate-400 mb-2">Your Holdings</div>
+                                <div className="text-xl sm:text-2xl font-bold text-blue-400">
                                     {currentHolding ? currentHolding.quantity : 0} Shares
                                 </div>
                                 {currentHolding && (
-                                    <div className="text-sm text-slate-500 mt-1">
+                                    <div className="text-xs sm:text-sm text-slate-500 mt-1">
                                         Avg: {formatCurrency(currentHolding.avgBuyPrice)}
                                     </div>
                                 )}
                             </div>
 
                             {/* Order Type */}
-                            <div className="bg-slate-900 border border-slate-800 rounded p-4">
-                                <div className="text-sm text-slate-400 mb-3">Order Type</div>
+                            <div className="bg-slate-900 border border-slate-800 rounded p-3 sm:p-4">
+                                <div className="text-xs sm:text-sm text-slate-400 mb-3">Order Type</div>
                                 <div className="grid grid-cols-3 gap-2">
                                     {['MARKET', 'LIMIT', 'STOP_LOSS'].map((type) => (
                                         <button
@@ -313,36 +316,36 @@ const Trade = () => {
                             </div>
 
                             {/* Trade Form */}
-                            <div className="bg-slate-900 border border-slate-800 rounded p-4">
+                            <div className="bg-slate-900 border border-slate-800 rounded p-3 sm:p-4">
                                 <div className="space-y-3">
                                     <div>
-                                        <label className="text-sm text-slate-400 block mb-2">Quantity</label>
+                                        <label className="text-xs sm:text-sm text-slate-400 block mb-2">Quantity</label>
                                         <input
                                             type="number"
                                             value={quantity}
                                             onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                                            className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                                            className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm sm:text-base text-white focus:outline-none focus:border-blue-500"
                                         />
                                     </div>
 
                                     {orderType !== 'MARKET' && (
                                         <div>
-                                            <label className="text-sm text-slate-400 block mb-2">Target Price</label>
+                                            <label className="text-xs sm:text-sm text-slate-400 block mb-2">Target Price</label>
                                             <input
                                                 type="number"
                                                 value={targetPrice}
                                                 onChange={(e) => setTargetPrice(e.target.value)}
                                                 placeholder="Enter price"
-                                                className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                                                className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm sm:text-base text-white focus:outline-none focus:border-blue-500"
                                             />
                                         </div>
                                     )}
 
                                     {stockData && orderType === 'MARKET' && (
-                                        <div className="bg-slate-800 rounded p-3 text-sm">
+                                        <div className="bg-slate-800 rounded p-3 text-xs sm:text-sm">
                                             <div className="flex justify-between mb-1">
                                                 <span className="text-slate-400">Subtotal:</span>
-                                                <span>{formatCurrency(parseFloat(stockData.price) * quantity)}</span>
+                                                <span className="break-all text-right">{formatCurrency(parseFloat(stockData.price) * quantity)}</span>
                                             </div>
                                             <div className="flex justify-between mb-1">
                                                 <span className="text-slate-400">Brokerage:</span>
@@ -350,7 +353,7 @@ const Trade = () => {
                                             </div>
                                             <div className="flex justify-between font-bold border-t border-slate-700 pt-2 mt-2">
                                                 <span>Total:</span>
-                                                <span>{formatCurrency(parseFloat(stockData.price) * quantity + 20)}</span>
+                                                <span className="break-all text-right">{formatCurrency(parseFloat(stockData.price) * quantity + 20)}</span>
                                             </div>
                                         </div>
                                     )}
@@ -359,21 +362,21 @@ const Trade = () => {
                                         <button
                                             onClick={() => handlePlaceOrder('BUY')}
                                             disabled={tradeLoading}
-                                            className="py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:opacity-50 rounded font-semibold"
+                                            className="py-2 sm:py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-700 disabled:opacity-50 rounded font-semibold text-sm sm:text-base"
                                         >
                                             {tradeLoading ? 'Processing...' : 'Buy'}
                                         </button>
                                         <button
                                             onClick={() => handlePlaceOrder('SELL')}
                                             disabled={tradeLoading || (orderType === 'MARKET' && (!currentHolding || currentHolding.quantity < quantity))}
-                                            className="py-3 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:opacity-50 rounded font-semibold"
+                                            className="py-2 sm:py-3 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:opacity-50 rounded font-semibold text-sm sm:text-base"
                                         >
                                             {tradeLoading ? 'Processing...' : 'Sell'}
                                         </button>
                                     </div>
 
                                     {tradeMessage.text && (
-                                        <div className={`text-center text-sm py-2 rounded ${
+                                        <div className={`text-center text-xs sm:text-sm py-2 rounded break-words ${
                                             tradeMessage.type === 'error'
                                                 ? 'bg-red-900/30 text-red-400 border border-red-800'
                                                 : 'bg-emerald-900/30 text-emerald-400 border border-emerald-800'
@@ -386,16 +389,16 @@ const Trade = () => {
 
                             {/* Pending Orders */}
                             {pendingOrders.length > 0 && (
-                                <div className="bg-slate-900 border border-slate-800 rounded p-4">
-                                    <div className="text-sm text-slate-400 mb-3">
+                                <div className="bg-slate-900 border border-slate-800 rounded p-3 sm:p-4">
+                                    <div className="text-xs sm:text-sm text-slate-400 mb-3">
                                         Pending Orders ({pendingOrders.length})
                                     </div>
-                                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                                    <div className="space-y-2 max-h-48 sm:max-h-64 overflow-y-auto">
                                         {pendingOrders.map(order => (
-                                            <div key={order._id} className="bg-slate-800 rounded p-3 text-sm">
-                                                <div className="flex justify-between items-start mb-2">
-                                                    <div>
-                                                        <span className="font-bold">{order.symbol}</span>
+                                            <div key={order._id} className="bg-slate-800 rounded p-2 sm:p-3 text-xs sm:text-sm">
+                                                <div className="flex justify-between items-start mb-2 gap-2">
+                                                    <div className="min-w-0 flex-1">
+                                                        <span className="font-bold truncate">{order.symbol}</span>
                                                         <span className={`ml-2 px-2 py-0.5 rounded text-xs ${
                                                             order.tradeType === 'BUY' ? 'bg-blue-900 text-blue-300' : 'bg-emerald-900 text-emerald-300'
                                                         }`}>
@@ -405,12 +408,12 @@ const Trade = () => {
                                                     </div>
                                                     <button
                                                         onClick={() => handleCancelOrder(order._id)}
-                                                        className="text-red-400 hover:text-red-300 text-xs"
+                                                        className="text-red-400 hover:text-red-300 text-xs flex-shrink-0"
                                                     >
                                                         Cancel
                                                     </button>
                                                 </div>
-                                                <div className="text-slate-400">
+                                                <div className="text-slate-400 text-xs break-words">
                                                     Qty: {order.quantity} • Target: ₹{order.targetPrice || order.stopPrice}
                                                 </div>
                                             </div>
