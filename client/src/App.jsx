@@ -20,6 +20,7 @@ import StockProfilePage from "./pages/StockProfilePage";
 import AlgoTrading from './pages/AlgoTrading';
 import AlgoBuilder from './pages/AlgoBuilder';
 import News from './pages/News'; 
+import Dividends from './pages/Dividends';
 
 const PageWrapper = ({ children }) => (
     <motion.div
@@ -40,6 +41,11 @@ function App() {
                 <Route path="/" element={<PageWrapper><Home /></PageWrapper>} />
                 <Route path="/login" element={<PageWrapper><Login /></PageWrapper>} />
                 <Route path="/register" element={<PageWrapper><Register /></PageWrapper>} />
+
+                <Route 
+                    path="/dividends" 
+                    element={<ProtectedRoute><Layout><PageWrapper><Dividends /></PageWrapper></Layout></ProtectedRoute>} 
+                />
 
                 {/* Protected Routes */}
                 <Route 

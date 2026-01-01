@@ -14,7 +14,8 @@ import {
     Newspaper,
     ChevronLeft,
     Menu,
-    X
+    X,
+    DollarSign  // ✅ ADD THIS IMPORT
 } from "lucide-react";
 
 const Sidebar = () => {
@@ -34,6 +35,7 @@ const Sidebar = () => {
         { to: "/watchlist", icon: Star, label: "Watchlist" },
         { to: "/screener", icon: Filter, label: "Screener" },
         { to: "/sentiment", icon: Gauge, label: "Sentiment" },
+        { to: "/dividends", icon: DollarSign, label: "Dividends" }, // ✅ NOW IT WORKS
     ];
 
     const secondaryItems = [
@@ -114,14 +116,13 @@ const Sidebar = () => {
                 <nav 
                     className="flex flex-col gap-1 p-4 flex-1 overflow-y-auto"
                     style={{
-                        /* Hide scrollbar for Chrome, Safari and Opera */
-                        scrollbarWidth: 'none', /* Firefox */
-                        msOverflowStyle: 'none', /* IE and Edge */
+                        scrollbarWidth: 'none',
+                        msOverflowStyle: 'none',
                     }}
                 >
                     <style>{`
                         nav::-webkit-scrollbar {
-                            display: none; /* Chrome, Safari, Opera */
+                            display: none;
                         }
                     `}</style>
 

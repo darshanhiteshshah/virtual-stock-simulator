@@ -16,11 +16,10 @@ const { getMarketStatus } = require("../utils/marketHours");
 // ⚠️ IMPORTANT: Most specific routes FIRST!
 
 // Market status endpoint (NO AUTH REQUIRED - public info)
+// Add this route (line 15-30)
 router.get("/market-status", (req, res) => {
     try {
         const status = getMarketStatus();
-        
-        // Add current time in IST
         const now = new Date();
         const istTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
         
@@ -43,8 +42,9 @@ router.get("/market-status", (req, res) => {
     }
 });
 
+
 // Get all stocks list
-router.get("/", protect, getAllStocks);
+router.get("/", getAllStocks);
 
 // Get single stock quote
 router.get("/price/:symbol", protect, getStockPrice);

@@ -2,10 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
 import { fetchStockProfile } from '../services/stockService';
-import { ArrowLeft, Newspaper, BarChart3, CandlestickChart as CandleIcon, TrendingUp } from 'lucide-react';
+import { ArrowLeft, Newspaper, TrendingUp } from 'lucide-react';
 import StockCard from '../components/StockCard';
-import StockChart from '../components/StockChart';
-import CandlestickChart from '../components/CandlestickChart';
+import StockChartToggle from '../components/StockChartToggle'; // ✅ NEW IMPORT
 import StockDetails from '../components/StockDetails';
 import { formatDate } from '../utils/dateFormatter';
 
@@ -14,7 +13,6 @@ const StockProfilePage = () => {
     const { user } = useAuth();
     const [stock, setStock] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [chartType, setChartType] = useState('line');
 
     useEffect(() => {
         const loadProfile = async () => {
@@ -35,7 +33,7 @@ const StockProfilePage = () => {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
+            <div className="w-full overflow-x-hidden min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
                 <div className="flex flex-col items-center gap-3">
                     <div className="w-12 h-12 border-4 border-slate-700 border-t-blue-500 rounded-full animate-spin"></div>
                     <p className="text-slate-400 text-sm">Loading stock data...</p>
@@ -46,7 +44,7 @@ const StockProfilePage = () => {
 
     if (!stock) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-6">
+            <div className="w-full overflow-x-hidden min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-6">
                 <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-8 text-center">
                     <p className="text-red-400 text-lg mb-4">Could not load data for this stock</p>
                     <Link 
@@ -62,7 +60,7 @@ const StockProfilePage = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6">
+        <div className="w-full overflow-x-hidden min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4 md:p-6">
             <div className="max-w-7xl mx-auto space-y-6">
                 {/* Header with Back Button */}
                 <div className="flex items-center gap-4">
@@ -74,7 +72,7 @@ const StockProfilePage = () => {
                         <ArrowLeft className="w-5 h-5 text-slate-400 hover:text-white transition-colors" />
                     </Link>
                     <div>
-                        <h1 className="text-3xl font-bold text-white">{symbol}</h1>
+                        <h1 className="text-2xl md:text-3xl font-bold text-white">{symbol}</h1>
                         <p className="text-slate-400 text-sm">{stock.profile.name}</p>
                     </div>
                 </div>
@@ -86,43 +84,10 @@ const StockProfilePage = () => {
                         {/* Stock Card */}
                         <StockCard {...stock.profile} />
 
-                        {/* Chart Section */}
-                        <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-800/50 rounded-xl p-6">
-                            {/* Chart Type Toggle */}
-                            <div className="flex items-center justify-between mb-6">
-                                <h2 className="text-lg font-semibold text-white">Price Chart</h2>
-                                <div className="inline-flex bg-slate-800/50 rounded-lg p-1 border border-slate-700/50">
-                                    <button 
-                                        onClick={() => setChartType('line')} 
-                                        className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 flex items-center gap-2 ${
-                                            chartType === 'line' 
-                                                ? 'bg-blue-600 text-white shadow-lg' 
-                                                : 'text-slate-400 hover:text-white'
-                                        }`}
-                                    >
-                                        <BarChart3 size={16} />
-                                        Line
-                                    </button>
-                                    <button 
-                                        onClick={() => setChartType('candlestick')} 
-                                        className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 flex items-center gap-2 ${
-                                            chartType === 'candlestick' 
-                                                ? 'bg-blue-600 text-white shadow-lg' 
-                                                : 'text-slate-400 hover:text-white'
-                                        }`}
-                                    >
-                                        <CandleIcon size={16} />
-                                        Candlestick
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Chart Display */}
-                            {chartType === 'line' ? (
-                                <StockChart data={stock.history} symbol={symbol} />
-                            ) : (
-                                <CandlestickChart data={stock.history} />
-                            )}
+                        {/* ✅ NEW: Chart Toggle Component */}
+                        <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-800/50 rounded-xl p-4 md:p-6">
+                            <h2 className="text-lg font-semibold text-white mb-4">Price Chart</h2>
+                            <StockChartToggle data={stock.history} symbol={symbol} />
                         </div>
 
                         {/* Stock Details */}
@@ -139,7 +104,28 @@ const StockProfilePage = () => {
                             </div>
 
                             {stock.news && stock.news.length > 0 ? (
-                                <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+                                <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2"
+                                    style={{
+                                        scrollbarWidth: 'thin',
+                                        scrollbarColor: '#475569 #1e293b'
+                                    }}
+                                >
+                                    <style>{`
+                                        div::-webkit-scrollbar {
+                                            width: 6px;
+                                        }
+                                        div::-webkit-scrollbar-track {
+                                            background: #1e293b;
+                                            border-radius: 3px;
+                                        }
+                                        div::-webkit-scrollbar-thumb {
+                                            background: #475569;
+                                            border-radius: 3px;
+                                        }
+                                        div::-webkit-scrollbar-thumb:hover {
+                                            background: #64748b;
+                                        }
+                                    `}</style>
                                     {stock.news.map((item, index) => (
                                         <div 
                                             key={index} 

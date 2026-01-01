@@ -46,6 +46,7 @@ const achievementRoutes = require("./routes/achievementRoutes");
 const feedRoutes = require("./routes/feedRoutes");
 const algoRoutes = require('./routes/algoRoutes');
 const marketRoutes = require('./routes/marketRoutes');
+const dividendRoutes = require('./routes/dividendRoutes');
 
 
 console.log('✅ All modules loaded successfully\n');
@@ -84,6 +85,7 @@ app.use("/api/achievements", achievementRoutes);
 app.use("/api/feed", feedRoutes);
 app.use('/api/algo', algoRoutes);
 app.use('/api/market', marketRoutes);
+app.use('/api/dividends', dividendRoutes);
 
 
 
