@@ -24,44 +24,32 @@ export const StockPriceProvider = ({ children }) => {
         }
 
         const fetchPrices = async () => {
-            try {
-                setIsLoading(true);
-                
-                console.log('🔄 Fetching fresh stock data from backend...');
-                console.log('API URL:', import.meta.env.VITE_API_URL);
-                
-                // Force fresh fetch by adding cache-busting parameter
-                const timestamp = Date.now();
-                const stocks = await fetchAllStocks(user.token);
-                
-                console.log('📦 Received from backend:', stocks?.length, 'stocks');
-                console.log('📊 First stock:', stocks?.[0]);
-                console.log('💰 First stock price:', stocks?.[0]?.price);
-                console.log('🏢 First stock exchange:', stocks?.[0]?.exchange);
+    try {
+        if (stockPrices.length === 0) {
+            setIsLoading(true);
+        }
 
-                if (stocks?.[0]?.exchange === 'BSE') {
-                    console.log('✅✅✅ RECEIVING YAHOO FINANCE DATA!');
-                } else if (stocks?.[0]?.exchange === 'BSE (Mock)') {
-                    console.error('❌ STILL RECEIVING MOCK DATA!');
-                }
+        const stocks = await fetchAllStocks(user.token);
 
-                if (isMounted.current && Array.isArray(stocks) && stocks.length > 0) {
-                    // Sort by name
-                    stocks.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-                    
-                    setStockPrices(stocks);
-                    setLastUpdated(new Date());
-                    
-                    console.log(`✅ Stock prices updated: ${stocks.length} stocks`);
-                }
-            } catch (error) {
-                console.error("❌ Failed to fetch stock prices:", error);
-            } finally {
-                if (isMounted.current) {
-                    setIsLoading(false);
-                }
-            }
-        };
+        if (stocks?.[0]?.source === 'UPSTOX') {
+            console.log('✅ LIVE Upstox data received');
+        }
+
+        if (isMounted.current && Array.isArray(stocks) && stocks.length > 0) {
+            stocks.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+            setStockPrices(stocks);
+            setLastUpdated(new Date());
+        }
+
+    } catch (error) {
+        console.error("❌ Failed to fetch stock prices:", error);
+    } finally {
+        if (isMounted.current) {
+            setIsLoading(false);
+        }
+    }
+};
 
         // Initial fetch
         fetchPrices();

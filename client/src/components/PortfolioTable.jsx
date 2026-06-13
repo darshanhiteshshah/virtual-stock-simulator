@@ -69,7 +69,7 @@ const PortfolioTable = ({ stocks, isLoading }) => {
                                             {formatCurrency(stock.avgBuyPrice)}
                                         </td>
                                         <td className="px-6 py-4 text-white font-medium">
-                                            {formatCurrency(parseFloat(stock.currentPrice))}
+                                            {formatCurrency(parseFloat(stock.price))}
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-md font-medium text-xs ${

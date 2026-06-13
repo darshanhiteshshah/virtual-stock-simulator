@@ -21,13 +21,15 @@ export const fetchStockPrice = async (symbol, token) => {
                 Authorization: `Bearer ${token}`,
                 "Cache-Control": "no-cache"
             },
-            params: { _t: Date.now() } // Cache buster
+            params: { _t: Date.now() }
         };
-        const response = await apiClient.get(`/stocks/price/${symbol}`, config);
-        
-        console.log(`📡 Fetched ${symbol}:`, response.data.price, response.data.exchange);
-        
-        return response.data;
+
+        const response = await apiClient.get(`/market/live-price/${symbol}`, config);
+
+        console.log(`📡 Fetched ${symbol}:`, response.data.data.price);
+
+        return response.data.data;   // 👈 IMPORTANT CHANGE
+
     } catch (error) {
         console.error(`Failed to fetch stock price for ${symbol}:`, error);
         throw error;
@@ -50,6 +52,7 @@ export const fetchAllStocks = async (token) => {
         console.log('📡 Fetching all stocks from:', `${import.meta.env.VITE_API_URL}/api/stocks`);
         
         const response = await apiClient.get("/stocks", config);
+        console.log("FULL RESPONSE:", response);
         
         console.log('✅ Received stocks:', response.data?.length);
         if (response.data?.[0]) {
