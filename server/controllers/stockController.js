@@ -104,48 +104,52 @@ exports.getMultipleStockPrices = async (req, res) => {
  */
 exports.getStockHistory = async (req, res) => {
     try {
+
         const symbol = req.params.symbol.toUpperCase();
-        //const { period = '1mo' } = req.query;
         const period = req.query.period || "1mo";
 
-let interval = "day";
+        let interval = "day";
 
-switch(period){
+        switch(period){
 
-    case "1d":
-        interval = "1minute";
-        break;
+            case "1d":
+                interval = "1minute";
+                break;
 
-    case "1wk":
-        interval = "30minute";
-        break;
+            case "1wk":
+                interval = "30minute";
+                break;
 
-    case "1mo":
-        interval = "day";
-        break;
+            case "1mo":
+                interval = "day";
+                break;
 
-    case "1y":
-        interval = "week";
-        break;
+            case "1y":
+                interval = "week";
+                break;
 
-    default:
-        interval = "day";
-}
-        
-        const history = await getHistoryForSymbol(symbol, period);
+            default:
+                interval = "day";
+        }
+
+        // FIX HERE
+        const history = await getHistoryForSymbol(symbol, interval);
 
         if (!history || history.length === 0) {
-            return res.status(404).json({ 
-                message: `Historical data for '${symbol}' not found.` 
+            return res.status(404).json({
+                message: `Historical data for '${symbol}' not found.`
             });
         }
-        
+
         res.json(history);
+
     } catch (error) {
+
         console.error("Error in getStockHistory controller:", error.message);
-        res.status(500).json({ 
+
+        res.status(500).json({
             message: "Server error fetching stock history",
-            error: error.message 
+            error: error.message
         });
     }
 };
