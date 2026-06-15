@@ -105,7 +105,32 @@ exports.getMultipleStockPrices = async (req, res) => {
 exports.getStockHistory = async (req, res) => {
     try {
         const symbol = req.params.symbol.toUpperCase();
-        const { period = '1mo' } = req.query;
+        //const { period = '1mo' } = req.query;
+        const period = req.query.period || "1mo";
+
+let interval = "day";
+
+switch(period){
+
+    case "1d":
+        interval = "1minute";
+        break;
+
+    case "1wk":
+        interval = "30minute";
+        break;
+
+    case "1mo":
+        interval = "day";
+        break;
+
+    case "1y":
+        interval = "week";
+        break;
+
+    default:
+        interval = "day";
+}
         
         const history = await getHistoryForSymbol(symbol, period);
 
