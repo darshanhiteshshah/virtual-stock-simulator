@@ -14,10 +14,10 @@ const Layout = ({ children }) => {
             
             {/* Main content area */}
             <div className="flex flex-col flex-grow overflow-hidden">
-                <Navbar />
-                
-                {/* Stock ticker - only shown when user is logged in */}
+                {/* Stock ticker - compact top bar */}
                 {user && <StockTicker />}
+                
+                <Navbar />
                 
                 {/* Main content with custom scrollbar */}
                 <main className="flex-grow overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-slate-900">
