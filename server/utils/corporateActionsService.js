@@ -24,7 +24,7 @@ const triggerCorporateAction = async () => {
         }
 
         if (actionType === 'DIVIDEND') {
-            const stockData = getMockStockData(stock.symbol);
+            const stockData = await getMockStockData(stock.symbol);
             const dividendPerShare = new Decimal(stockData.price).times(0.005).toNumber(); // 0.5% dividend
 
             for (const user of usersHoldingStock) {

@@ -1,29 +1,28 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import apiClient from '../api';
 import useAuth from '../hooks/useAuth';
 import { DollarSign, Calendar, TrendingUp } from 'lucide-react';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://virtual-stock-simulator.onrender.com';
-
 const Dividends = () => {
-    const { token } = useAuth();
+    const { user } = useAuth();
+    const token = user?.token;
     const [userDividends, setUserDividends] = useState(null);
     const [upcomingDividends, setUpcomingDividends] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetchDividends();
-    }, []);
+        if (token) {
+            fetchDividends();
+        }
+    }, [token]);
 
     const fetchDividends = async () => {
-        try {
-            const config = {
-                headers: { Authorization: `Bearer ${token}` }
-            };
+        if (!token) return;
 
+        try {
             const [userRes, upcomingRes] = await Promise.all([
-                axios.get(`${API_URL}/api/dividends/user`, config),
-                axios.get(`${API_URL}/api/dividends/upcoming`, config)
+                apiClient.get('/dividends/user'),
+                apiClient.get('/dividends/upcoming')
             ]);
 
             setUserDividends(userRes.data);

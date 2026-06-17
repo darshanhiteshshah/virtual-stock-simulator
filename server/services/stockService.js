@@ -145,6 +145,88 @@ const getStockMeta = (symbol) => {
 //         };
 //     }
 // }
+// async function fetchLiveQuote(symbol) {
+
+//     const cacheKey = `price:${symbol}`;
+
+//     if (isCacheValid(priceCache, cacheKey)) {
+//         return priceCache.get(cacheKey).data;
+//     }
+
+//     try {
+//         const instrumentKey = instrumentMap[symbol];
+
+//         if (!instrumentKey) {
+//             throw new Error("Invalid symbol");
+//         }
+
+//         const response = await axios.get(
+//             `https://api.upstox.com/v2/market-quote/quotes?instrument_key=${instrumentKey}`,
+//             {
+//                 headers: {
+//                     accept: "application/json",
+//                     Authorization: `Bearer ${ACCESS_TOKEN}`
+//                 }
+//             }
+//         );
+
+//         const data = response.data.data;
+//         const stock = Object.values(data)[0];
+//         console.log("========== STOCK DATA ==========");
+// console.log(JSON.stringify(stock, null, 2));
+// console.log("================================");
+//         const meta = getStockMeta(symbol);
+
+//         const lastPrice = stock.last_price || 0;
+
+// const previousClose =
+//     stock?.ohlc?.close ||
+//     stock?.close_price ||
+//     0;
+
+// const change = lastPrice - previousClose;
+
+// const changePercent =
+//     previousClose > 0
+//         ? (change / previousClose) * 100
+//         : 0;
+
+// const stockData = {
+//     symbol,
+//     name: meta.name,
+//     sector: meta.sector,
+//     exchange: "NSE",
+//     price: Number(lastPrice),
+//     change: Number(change.toFixed(2)),
+//     changePercent: Number(changePercent.toFixed(2)),
+//     volume: stock.volume || 0,
+//     source: "UPSTOX",
+//     lastUpdated: new Date().toISOString()
+// };
+
+//         priceCache.set(cacheKey, {
+//             data: stockData,
+//             timestamp: Date.now()
+//         });
+
+//         return stockData;
+
+//     } catch (err) {
+//         console.error(`❌ Upstox error for ${symbol}:`, err.message);
+
+//         return {
+//             symbol,
+//             name: symbol,
+//             sector: "Other",
+//             exchange: "NSE",
+//             price: 1000,
+//             changePercent: 0,
+//             volume: 0,
+//             source: "FALLBACK"
+//         };
+//     }
+// }
+
 async function fetchLiveQuote(symbol) {
 
     const cacheKey = `price:${symbol}`;
@@ -154,6 +236,7 @@ async function fetchLiveQuote(symbol) {
     }
 
     try {
+
         const instrumentKey = instrumentMap[symbol];
 
         if (!instrumentKey) {
@@ -161,7 +244,7 @@ async function fetchLiveQuote(symbol) {
         }
 
         const response = await axios.get(
-            `https://api.upstox.com/v2/market-quote/ltp?instrument_key=${instrumentKey}`,
+            `https://api.upstox.com/v2/market-quote/quotes?instrument_key=${instrumentKey}`,
             {
                 headers: {
                     accept: "application/json",
@@ -173,19 +256,39 @@ async function fetchLiveQuote(symbol) {
         const data = response.data.data;
         const stock = Object.values(data)[0];
 
+        console.log("========== STOCK DATA ==========");
+        console.log(JSON.stringify(stock, null, 2));
+        console.log("================================");
+
         const meta = getStockMeta(symbol);
 
-        const stockData = {
+        const lastPrice = Number(stock.last_price || 0);
+
+        // Upstox gives today's change directly
+        const change = Number(stock.net_change || 0);
+
+        // Previous close = current price - today's change
+        const previousClose = lastPrice - change;
+
+        const changePercent =
+            previousClose > 0
+                ? (change / previousClose) * 100
+                : 0;
+
+        let stockData = {
             symbol,
             name: meta.name,
             sector: meta.sector,
             exchange: "NSE",
-            price: stock.last_price,
-            changePercent: 0, // Upstox LTP doesn’t give this directly
-            volume: 0,
+            price: Number(lastPrice.toFixed(2)),
+            change: Number(change.toFixed(2)),
+            changePercent: Number(changePercent.toFixed(2)),
+            volume: Number(stock.volume || 0),
             source: "UPSTOX",
             lastUpdated: new Date().toISOString()
         };
+
+        stockData = applyMockAdjustments(stockData);
 
         priceCache.set(cacheKey, {
             data: stockData,
@@ -195,6 +298,7 @@ async function fetchLiveQuote(symbol) {
         return stockData;
 
     } catch (err) {
+
         console.error(`❌ Upstox error for ${symbol}:`, err.message);
 
         return {
@@ -203,12 +307,14 @@ async function fetchLiveQuote(symbol) {
             sector: "Other",
             exchange: "NSE",
             price: 1000,
+            change: 0,
             changePercent: 0,
             volume: 0,
             source: "FALLBACK"
         };
     }
 }
+
 // ==========================
 // HISTORICAL DATA (Backtest)
 // ==========================
@@ -326,6 +432,8 @@ async function getAllStockData() {
     return results;
 }
 
+const mockPriceAdjustments = new Map();
+
 function getAvailableStocks() {
     return stockTemplates;
 }
@@ -343,6 +451,25 @@ function clearCache() {
     console.log("🗑️ Stock cache cleared");
 }
 
+function splitStock(symbol) {
+    const currentAdjustment = mockPriceAdjustments.get(symbol) || 1;
+    mockPriceAdjustments.set(symbol, currentAdjustment * 0.5);
+}
+
+function applyMockAdjustments(stockData) {
+    const adjustment = mockPriceAdjustments.get(stockData.symbol) || 1;
+    if (adjustment !== 1) {
+        stockData.price = Number((stockData.price * adjustment).toFixed(2));
+        if (typeof stockData.change === 'number') {
+            stockData.change = Number((stockData.change * adjustment).toFixed(2));
+        }
+        if (typeof stockData.changePercent === 'number') {
+            stockData.changePercent = Number((stockData.changePercent * adjustment).toFixed(2));
+        }
+    }
+    return stockData;
+}
+
 // ==========================
 // EXPORTS (VERY IMPORTANT)
 // ==========================
@@ -353,5 +480,8 @@ module.exports = {
     searchStocks,
     clearCache,
     getHistoryForSymbol,
-    stockTemplates
+    stockTemplates,
+    mockStockService: {
+        splitStock
+    }
 };

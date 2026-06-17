@@ -26,12 +26,18 @@ export const AuthProvider = ({ children }) => {
         }
     }, []);
 
-    // Persist user to localStorage whenever the user state changes
+    // Persist user to localStorage and keep the raw token available for auth requests
     useEffect(() => {
         if (user) {
             localStorage.setItem("authUser", JSON.stringify(user));
+            if (user.token) {
+                localStorage.setItem("token", user.token);
+            } else {
+                localStorage.removeItem("token");
+            }
         } else {
             localStorage.removeItem("authUser");
+            localStorage.removeItem("token");
         }
     }, [user]);
 
